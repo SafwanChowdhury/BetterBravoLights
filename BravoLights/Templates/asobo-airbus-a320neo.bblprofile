@@ -1,0 +1,29 @@
+{
+  "format": "BetterBravoLights.Profile",
+  "version": 1,
+  "id": "asobo-airbus-a320neo",
+  "name": "Asobo Airbus A320neo",
+  "enabled": true,
+  "aircraft": [
+    "Asobo_A320_NEO"
+  ],
+  "inheritDefault": true,
+  "lights": {
+    "AUTOPILOT": {
+      "expression": "L:XMLVAR_Autopilot_1_Status == 1 OR L:XMLVAR_Autopilot_2_Status == 1",
+      "note": "A320 has two autopilots only available through LVARS"
+    },
+    "StarterEngaged": {
+      "expression": "A:TURB ENG IGNITION SWITCH EX1:1, bool == 2",
+      "note": "On the A320 the starter switch is 'TURB ENG IGNITION SWITCH EX1:n' (the master engine switches are 'GENERAL ENG STARTER:n')"
+    },
+    "AntiIce": {
+      "expression": "A:STRUCTURAL DEICE SWITCH, bool == 1 OR A:ENG ANTI ICE:1, bool == 1 OR A:ENG ANTI ICE:2, bool == 1 OR A:PITOT HEAT, bool == 1",
+      "note": "Wing, Eng1 or Eng2 Anti-Ice buttons A320 is different from GA aircraft in that we show when an Anti-Ice system is _enabled_ rather than when it isn't"
+    },
+    "APU": {
+      "expression": "A:APU GENERATOR ACTIVE, bool == 1",
+      "note": "Don't check for APU GENERATOR SWITCH. It always reports '1'"
+    }
+  }
+}

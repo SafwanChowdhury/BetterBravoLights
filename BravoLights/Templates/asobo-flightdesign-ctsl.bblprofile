@@ -1,0 +1,21 @@
+{
+  "format": "BetterBravoLights.Profile",
+  "version": 1,
+  "id": "asobo-flightdesign-ctsl",
+  "name": "Asobo FlightDesign CTSL",
+  "enabled": true,
+  "aircraft": [
+    "Asobo_FlightDesignCT"
+  ],
+  "inheritDefault": true,
+  "lights": {
+    "LowOilPressure": {
+      "expression": "A:GENERAL ENG OIL PRESSURE:1, bar < 2",
+      "note": "From cockpit.cfg"
+    },
+    "LowVolts": {
+      "expression": "A:ELECTRICAL MAIN BUS VOLTAGE:1, volts < 11.5",
+      "note": "Not listed anywhere, so basing on other 12V such as E330"
+    }
+  }
+}

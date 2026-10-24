@@ -1,0 +1,22 @@
+{
+  "format": "BetterBravoLights.Profile",
+  "version": 1,
+  "id": "robinson-r44",
+  "name": "Robinson R44",
+  "enabled": true,
+  "aircraft": [
+    "r44"
+  ],
+  "inheritDefault": true,
+  "lights": {
+    "LowVolts": {
+      "expression": "A:ELECTRICAL MAIN BUS VOLTAGE, volts < 13"
+    },
+    "LowOilPressure": {
+      "expression": "A:GENERAL ENG OIL PRESSURE:1, bar < 2.5"
+    },
+    "Door": {
+      "expression": "L:DOORS_VIS > 0"
+    }
+  }
+}

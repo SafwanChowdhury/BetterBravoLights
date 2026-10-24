@@ -1,0 +1,23 @@
+{
+  "format": "BetterBravoLights.Profile",
+  "version": 1,
+  "id": "microsoft-volocity-volocity",
+  "name": "Microsoft Volocity Volocity",
+  "enabled": true,
+  "aircraft": [
+    "Microsoft_Volocity"
+  ],
+  "inheritDefault": true,
+  "lights": {
+    "MasterWarning": {
+      "expression": "L:XMLVAR_VOLOCITY_Warning_Master_Waiting_For_Ack == 1"
+    },
+    "MasterCaution": {
+      "expression": "L:XMLVAR_VOLOCITY_Caution_Master_Waiting_For_Ack == 1"
+    },
+    "LowVolts": {
+      "expression": "A:ELECTRICAL MAIN BUS VOLTAGE, volts < 11.8",
+      "note": "From cockpit.cfg"
+    }
+  }
+}

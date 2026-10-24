@@ -1,43 +1,20 @@
 ﻿using System;
 using System.IO;
-using System.Text.RegularExpressions;
 using System.Windows.Forms;
 
 namespace BravoLights.Installation
 {
     static class FlightSimulatorPaths
     {
-        /// <summary>
-        /// Gets the location of the main Flight Simulator installation.
-        /// </summary>
-        public static string FlightSimulatorPath
-        {
-            get
-            {
-                var localAppData = (UnitTestRoot == null) ? Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) : Path.Join(UnitTestRoot, "LOCALAPPDATA");
-                var windowsStoreLocation = Path.Join(localAppData, "Packages", "Microsoft.FlightSimulator_8wekyb3d8bbwe", "LocalCache");
+        public const string WasmModuleName = "better-bravo-lights-lvar-module";
 
-                var appData = (UnitTestRoot == null) ? Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) : Path.Join(UnitTestRoot, "APPDATA");
-                var steamLocation = Path.Join(appData, "Microsoft Flight Simulator");
+        internal static string UnitTestRoot = null;
 
-                var pathsToTry = new[]
-                {
-                    windowsStoreLocation,
-                    steamLocation
-                };
+        public static string LocalAppData =>
+            UnitTestRoot == null ? Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) : Path.Join(UnitTestRoot, "LOCALAPPDATA");
 
-                foreach (var path in pathsToTry)
-                {
-                    if (File.Exists(Path.Join(path, "FlightSimulator.CFG")) || File.Exists(Path.Join(path, "UserCfg.opt")))
-                    {
-                        return path;
-                    }
-                }
-
-                var pathsTried = String.Join(", ", pathsToTry);
-                throw new Exception($"Could not locate main Flight Simulator path. Paths tried: {pathsTried}");
-            }
-        }
+        public static string AppData =>
+            UnitTestRoot == null ? Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) : Path.Join(UnitTestRoot, "APPDATA");
 
         /// <summary>
         /// Gets the path that the BBL .exe is running from.
@@ -51,96 +28,50 @@ namespace BravoLights.Installation
                     return Application.StartupPath;
                 }
 
-                return Path.Join(Application.StartupPath, "..", "..", "..", "..", "BravoLights", "bin", "Debug", "net5.0-windows");
+                // Unit tests run alongside the main program output
+                return AppContext.BaseDirectory;
             }
         }
+
+        public static string BetterBravoLightsExePath => Path.Join(BetterBravoLightsPath, "BetterBravoLights.exe");
 
         /// <summary>
-        /// Gets the location of the MSFS exe.xml file, which may not actually exist yet.
+        /// Gets the location of the WASM module package shipped with the program.
         /// </summary>
-        public static string ExeXmlPath
-        {
-            get
-            {
-                return Path.Join(FlightSimulatorPath, "exe.xml");
-            }
-        }
+        public static string IncludedWasmModulePath => Path.Join(BetterBravoLightsPath, "Packages", WasmModuleName);
 
         /// <summary>
-        /// Gets the location of the UserCfg.opt file.
+        /// Gets the location of the read-only aircraft profile templates shipped with the program.
         /// </summary>
-        private static string UserCfgOptPath
-        {
-            get
-            {
-                return Path.Join(FlightSimulatorPath, "UserCfg.opt");
-            }
-        }
+        public static string TemplatesPath => Path.Join(BetterBravoLightsPath, "Templates");
 
-        private static readonly Regex installedPackagesPathRegex = new("^InstalledPackagesPath \"(.*)\"");
+        public static string KnownSimVarsPath => Path.Join(BetterBravoLightsPath, "KnownSimVars.csv");
 
         /// <summary>
-        /// Gets the location of the Official and Community directories.
+        /// Gets the per-user data directory: %APPDATA%\BetterBravoLights.
         /// </summary>
-        public static string MSFSPackagesPath
-        {
-            get
-            {
-                var lines = File.ReadAllLines(UserCfgOptPath);
-                foreach (var line in lines)
-                {
-                    var match = installedPackagesPathRegex.Match(line);
-                    if (match.Success)
-                    {
-                        return match.Groups[1].Value;
-                    }
-                }
-
-                throw new Exception("Cannot locate FS packages path");
-            }
-        }
-
+        public static string UserDataPath => Path.Join(AppData, "BetterBravoLights");
 
         /// <summary>
-        /// Gets the location of the Community directory.
+        /// Gets the directory holding the user's aircraft profiles.
         /// </summary>
-        public static string CommunityPath
-        {
-            get { return Path.Join(MSFSPackagesPath, "Community"); }
-        }
+        public static string ProfilesPath => Path.Join(UserDataPath, "Profiles");
 
+        /// <summary>
+        /// Gets a directory for caching data such as the LVars seen for each aircraft.
+        /// </summary>
+        public static string CachePath => Path.Join(UserDataPath, "Cache");
 
-        private const string WasmModuleName = "better-bravo-lights-lvar-module";
-
-        public static string InstalledWasmModulePath
-        {
-            get { return Path.Join(CommunityPath, WasmModuleName); }
-        }
-        public static string IncludedWasmModulePath
-        {
-            get { return Path.Join(BetterBravoLightsPath, "Packages", WasmModuleName); }
-        }
-
-        public static string BuiltInConfigIniPath
-        {
-            get { return Path.Join(BetterBravoLightsPath, "Config.BuiltIn.ini"); }
-        }
-
-        public static string UserRuntimePath
+        /// <summary>
+        /// Gets the location of the old single-file user configuration (pre-profiles), which lived next to the Program directory.
+        /// </summary>
+        public static string LegacyUserConfigIniPath
         {
             get
             {
-                return Path.Combine(new DirectoryInfo(BetterBravoLightsPath).Parent.FullName);
+                var parent = new DirectoryInfo(BetterBravoLightsPath).Parent;
+                return parent == null ? null : Path.Combine(parent.FullName, "Config.ini");
             }
         }
-        public static string UserConfigIniPath
-        {
-            get
-            {
-                return Path.Combine(UserRuntimePath, "Config.ini");
-            }
-        }
-
-        internal static string UnitTestRoot = null;
     }
 }

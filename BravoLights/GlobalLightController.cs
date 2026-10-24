@@ -3,7 +3,10 @@ using NLog;
 
 namespace BravoLights
 {
-    public class GlobalLightController
+    /// <summary>
+    /// Decides whether the Bravo should be showing lights at all.
+    /// </summary>
+    public class GlobalLightController : ViewModelBase
     {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
@@ -26,13 +29,45 @@ namespace BravoLights
         private bool simulatorConnected;
         public bool SimulatorConnected { get => simulatorConnected; set { simulatorConnected = value; Check(); } }
 
+        private bool lightTest;
+        /// <summary>
+        /// Forces the lights on (with every light lit) so that the user can test their Bravo.
+        /// </summary>
+        public bool LightTest { get => lightTest; set { lightTest = value; Check(); } }
+
+        private bool lightsEnabled;
+        public bool LightsEnabled
+        {
+            get => lightsEnabled;
+            private set => SetProperty(ref lightsEnabled, value);
+        }
+
+        /// <summary>
+        /// A short human-readable explanation of why the lights are on or off.
+        /// </summary>
+        public string Reason
+        {
+            get
+            {
+                if (ApplicationExiting) return "Exiting";
+                if (LightTest) return "Light test";
+                if (!SimulatorConnected) return "Waiting for a flight";
+                if (SimulatorInMainMenu) return "In main menu";
+                if (ReadingConfiguration) return "Applying profile";
+                return "Active";
+            }
+        }
+
         private void Check()
         {
-            logger.Debug("SimulatorInMainMenu={0}, ReadingConfiguration={1}, ApplicationExiting={2}, SimulatorConnected={3}",
-                SimulatorInMainMenu, ReadingConfiguration, ApplicationExiting, SimulatorConnected);
+            logger.Debug("SimulatorInMainMenu={0}, ReadingConfiguration={1}, ApplicationExiting={2}, SimulatorConnected={3}, LightTest={4}",
+                SimulatorInMainMenu, ReadingConfiguration, ApplicationExiting, SimulatorConnected, LightTest);
 
-            var lightsShouldBeOn = !SimulatorInMainMenu && !ReadingConfiguration && !ApplicationExiting && SimulatorConnected;
+            var lightsShouldBeOn = !ApplicationExiting &&
+                (LightTest || (!SimulatorInMainMenu && !ReadingConfiguration && SimulatorConnected));
             usbLogic.LightsEnabled = lightsShouldBeOn;
+            LightsEnabled = lightsShouldBeOn;
+            RaisePropertyChanged(nameof(Reason));
         }
     }
 }

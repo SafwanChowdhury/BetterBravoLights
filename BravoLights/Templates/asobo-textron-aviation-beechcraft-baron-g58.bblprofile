@@ -1,0 +1,21 @@
+{
+  "format": "BetterBravoLights.Profile",
+  "version": 1,
+  "id": "asobo-textron-aviation-beechcraft-baron-g58",
+  "name": "Asobo Textron Aviation Beechcraft Baron G58",
+  "enabled": true,
+  "aircraft": [
+    "Asobo_Baron_G58"
+  ],
+  "inheritDefault": true,
+  "lights": {
+    "LowOilPressure": {
+      "expression": "A:GENERAL ENG OIL PRESSURE:1, psi < 30 OR A:GENERAL ENG OIL PRESSURE:2, psi < 30",
+      "note": "From cockpit.cfg"
+    },
+    "LowVolts": {
+      "expression": "A:ELECTRICAL MAIN BUS VOLTAGE:1, volts < 24",
+      "note": "From cockpit.cfg"
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "format": "BetterBravoLights.Profile",
+  "version": 1,
+  "id": "asobo-zlin-aviation-savage-cub",
+  "name": "Asobo Zlin Aviation Savage Cub",
+  "enabled": true,
+  "aircraft": [
+    "Asobo_Savage_Cub"
+  ],
+  "inheritDefault": true,
+  "lights": {
+    "LowOilPressure": {
+      "expression": "A:GENERAL ENG OIL PRESSURE:1, bar < 2",
+      "note": "From cockpit.cfg"
+    },
+    "LowVolts": {
+      "expression": "A:ELECTRICAL MAIN BUS VOLTAGE:1, volts <= 13",
+      "note": "12V based"
+    }
+  }
+}

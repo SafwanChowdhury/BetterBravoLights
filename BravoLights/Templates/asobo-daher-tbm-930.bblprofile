@@ -1,0 +1,21 @@
+{
+  "format": "BetterBravoLights.Profile",
+  "version": 1,
+  "id": "asobo-daher-tbm-930",
+  "name": "Asobo Daher TBM 930",
+  "enabled": true,
+  "aircraft": [
+    "Asobo_TBM930"
+  ],
+  "inheritDefault": true,
+  "lights": {
+    "LowOilPressure": {
+      "expression": "A:ENG OIL PRESSURE:1, psi < 105",
+      "note": "From cockpit.cfg"
+    },
+    "LowVolts": {
+      "expression": "A:ELECTRICAL MAIN BUS VOLTAGE, volts < 28",
+      "note": "From cockpit.cfg"
+    }
+  }
+}

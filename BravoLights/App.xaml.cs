@@ -1,16 +1,17 @@
 ﻿using System;
+using System.Drawing;
+using System.IO;
+using System.Linq;
+using System.Threading;
 using System.Windows;
 using System.Windows.Interop;
-using Forms = System.Windows.Forms;
 using BravoLights.Connections;
 using BravoLights.Installation;
+using BravoLights.Profiles;
 using BravoLights.UI;
-using System.Drawing;
-using BravoLights.Common;
-using System.Diagnostics;
+using BravoLights.UI.ViewModels;
 using NLog;
-using System.IO;
-using System.ComponentModel;
+using Forms = System.Windows.Forms;
 
 namespace BravoLights
 {
@@ -19,43 +20,31 @@ namespace BravoLights
     /// </summary>
     public partial class App : Application
     {
-        private BBLSplashScreen splashScreen;
-        private LightsWindow lightsWindow;
-
-        private MainViewModel viewModel;
-        private UsbLogic usbLogic;
-        private GlobalLightController globalLightController;
-        private IConfig config;
-
-        private Forms.NotifyIcon notifyIcon;
-
-        private bool startedBySimulator = false;
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
-        private VariableList variableList;
+        private const int WM_USER_SIMCONNECT = 0x0402;
 
-        private void TryInstallOrUninstall(string cmd)
+        private AppCore core;
+        private ShellViewModel shell;
+        private MainWindow mainWindow;
+        private HwndSource messageWindow;
+        private Forms.NotifyIcon notifyIcon;
+        private Mutex singleInstanceMutex;
+        private bool startedBySimulator;
+        private bool shownTrayHint;
+
+        private static bool TryInstallOrUninstall(string cmd)
         {
             try
             {
                 switch (cmd)
                 {
                     case "/install":
-                        {
-                            var msg = Installer.Install();
-                            MessageBox.Show(msg, "Better Bravo Lights");
-                            logger.Debug("Install:Exit");
-                            Environment.Exit(0);
-                            break;
-                        }
+                        MessageBox.Show(Installer.Install(), "Better Bravo Lights");
+                        return true;
                     case "/uninstall":
-                        {
-                            var msg = Installer.Uninstall();
-                            MessageBox.Show(msg, "Better Bravo Lights");
-                            logger.Debug("Uninstall:Exit");
-                            Environment.Exit(0);
-                            break;
-                        }
+                        MessageBox.Show(Installer.Uninstall(), "Better Bravo Lights");
+                        return true;
                 }
             }
             catch (CorruptExeXmlException ex)
@@ -63,280 +52,142 @@ namespace BravoLights
                 // The exe.xml file is broken. Maybe we can fix it?
                 if (ex.RepairedContent != null)
                 {
-                    // Yes! Fix the exe.xml file
+                    // Yes! Fix the exe.xml file, keeping a copy of the broken one
+                    File.Copy(ex.ExeXmlFilename, ex.ExeXmlFilename + ".corrupt-backup", true);
                     File.WriteAllText(ex.ExeXmlFilename, ex.RepairedContent);
                     // Go try the install/uninstall again
-                    TryInstallOrUninstall(cmd);
-                    return;
+                    return TryInstallOrUninstall(cmd);
                 }
-                else
-                {
-                    var window = new CorruptExeXmlErrorWindow() { Exception = ex };
-                    window.ShowDialog();
-                    Environment.Exit(0);
-                }
+
+                new CorruptExeXmlErrorWindow { Exception = ex }.ShowDialog();
+                return true;
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Operation failed: {ex.GetType().FullName}:{ex.Message}. Please report this to the application author.", "Better Bravo Lights", MessageBoxButton.OK, MessageBoxImage.Error);
-                Environment.Exit(0);
+                MessageBox.Show($"Operation failed: {ex.GetType().FullName}: {ex.Message}", "Better Bravo Lights", MessageBoxButton.OK, MessageBoxImage.Error);
+                return true;
             }
+            return false;
         }
 
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
 
-            logger.Debug("Starting");
-
+            logger.Info("Starting {0}", ProgramInfo.ProductNameAndVersion);
             logger.Debug("Arguments {0}", string.Join(" ", e.Args));
+
+            DispatcherUnhandledException += (s, args) =>
+            {
+                logger.Error(args.Exception, "Unhandled exception");
+                MessageBox.Show($"Something went wrong: {args.Exception.Message}\n\nDetails are in the log file.", "Better Bravo Lights", MessageBoxButton.OK, MessageBoxImage.Error);
+                args.Handled = true;
+            };
+
+            // Developer tool: convert an old INI configuration into profile files.
+            // BetterBravoLights.exe /convert-ini Config.BuiltIn.ini OutputDirectory
+            if (e.Args.Length == 3 && e.Args[0] == "/convert-ini")
+            {
+                ConvertIni(e.Args[1], e.Args[2]);
+                Shutdown(0);
+                return;
+            }
 
             if (e.Args.Length == 1)
             {
                 var cmd = e.Args[0];
-
                 if (cmd == "/startedbysimulator")
                 {
                     startedBySimulator = true;
-                    logger.Debug("Started by simulator");
+                    logger.Info("Started by simulator");
                 }
-
-                TryInstallOrUninstall(cmd);
+                else if (TryInstallOrUninstall(cmd))
+                {
+                    Shutdown(0);
+                    return;
+                }
             }
             else
             {
-                logger.Debug("Run without arguments");
-
-                // Run without command arguments; detect whether it should automatically exit
-                if (Installer.IsSetToRunOnStartup && Installer.InstallationNeedsUpdating)
+                // We're being run manually. Are we in a situation where the user has previously installed BBL but now it isn't working
+                // and they're running it manually? Let's check.
+                var problem = Installer.InstallationProblem;
+                if (problem != null)
                 {
-                    logger.Debug("Need to update installation");
-
-                    // We are set to run on simulator startup but the installation entries are out of date
-                    try
-                    {
-                        Installer.Install();
-                    }
-                    catch { }
-                }
-                else
-                {
-                    // We're being run manually. Are we in a situation where the user has previously installed BBL but now it isn't working
-                    // and they're running it manually? Let's check.
-                    var problem = Installer.InstallationProblem;
-                    if (problem != null)
-                    {
-                        // Yes!  Tell the user.
-                        // Do we carry on, or exit?
-                        logger.Warn("Installation problem detected on manual startup: {0}", problem);
-
-                        var result = MessageBox.Show($"BetterBravoLights has detected a problem with its installation:\n\n{problem}\n\n\n\nDo you want this manually-launched BetterBravoLights to continue running (Yes) or exit (No)?", "Better Bravo Lights Installation Problem Detected", MessageBoxButton.YesNo);
-                        if (result == MessageBoxResult.No)
-                        {
-                            Environment.Exit(0);
-                        }
-                    }
+                    logger.Warn("Installation problem detected on manual startup: {0}", problem);
+                    MessageBox.Show($"Better Bravo Lights has detected a problem with its installation:\n\n{problem}", "Better Bravo Lights", MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
             }
 
-            var processName = Process.GetCurrentProcess().ProcessName;
-            if (Process.GetProcessesByName(processName).Length > 1)
+            singleInstanceMutex = new Mutex(true, "BetterBravoLights.SingleInstance", out var createdNew);
+            if (!createdNew)
             {
-                logger.Debug("Existing copy already running");
-
-                // There was already a copy running.
-                if (startedBySimulator)
+                logger.Info("Existing copy already running");
+                if (!startedBySimulator)
                 {
-                    // It's being started by the simulator. Exit silently.
-                    Environment.Exit(0);
+                    MessageBox.Show("Better Bravo Lights is already running. Look for its icon in the notification area.", "Better Bravo Lights");
                 }
-                else
-                {
-                    MessageBox.Show($"Another copy of Better Bravo Lights is already running.", "Better Bravo Lights", MessageBoxButton.OK);
-                    Environment.Exit(0);
-                }
+                Shutdown(0);
+                return;
             }
 
-            var includedWasmVersion = Installer.IncludedWasmModuleVersion;
-            var installedWasmVersion = Installer.InstalledWasmModuleVersion;
+            core = new AppCore(Dispatcher);
+            core.Initialize();
+            core.SimulatorExited += Core_SimulatorExited;
 
-            logger.Debug("Installed WASM {0}, included WASM {1}", installedWasmVersion, includedWasmVersion);
+            CreateSimConnectMessageWindow();
 
-            if (installedWasmVersion != includedWasmVersion)
+            shell = new ShellViewModel(core);
+            mainWindow = new MainWindow(shell);
+            mainWindow.HiddenToTray += MainWindow_HiddenToTray;
+            MainWindow = mainWindow;
+
+            CreateNotifyIcon();
+            core.PropertyChanged += (s, args) =>
             {
-                var doInstall = false;
+                if (args.PropertyName is nameof(AppCore.SimState) or nameof(AppCore.BravoPresent) or nameof(AppCore.ActiveMatch))
+                {
+                    UpdateTrayIconText();
+                }
+            };
 
-                if (installedWasmVersion == null)
-                {
-                    if (MessageBox.Show("Lights that use L: variables will not work correctly unless the Better Bravo Lights WASM module is installed in the Flight Simulator Community folder. Would you like it to be installed?",
-                        "Better Bravo Lights", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
-                    {
-                        doInstall = true;
-                    }
-                }
-                else
-                {
-                    if (MessageBox.Show("Lights that use L: variables will not work correctly unless the correct version of the Better Bravo Lights WASM module is installed in the Flight Simulator Community folder. Would you like the correct version to be installed?",
-                        "Better Bravo Lights", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
-                    {
-                        doInstall = true;
-                    }
-                }
-                if (doInstall)
-                {
-                    Installer.InstallWasmModule();
-                    MessageBox.Show("The Better Bravo Lights WASM module is now installed. If Flight Simulator was already running it will need to be restarted.", "Better Bravo Lights", MessageBoxButton.OK);
-                }
-                else
-                {
-                    LVarManager.Connection.DisableLVars = true;
-                }
+            OfferLegacyImport();
+            OfferWasmInstallIfMissing();
+
+            // Developer tool: render each page to a PNG, e.g. to check layout changes.
+            // BetterBravoLights.exe /render-pages OutputDirectory
+            if (e.Args.Length == 2 && e.Args[0] == "/render-pages")
+            {
+                RenderPagesAsync(e.Args[1]);
+                return;
             }
 
-            viewModel = new MainViewModel();
-            usbLogic = new UsbLogic(viewModel);
-            usbLogic.PropertyChanged += delegate (object sender, PropertyChangedEventArgs e)
+            if (!startedBySimulator && core.Settings.ShowWindowOnManualStart)
             {
-                if (e.PropertyName == nameof(IUsbLogic.BravoPresent))
-                {
-                    Dispatcher.Invoke(delegate
-                    {
-                        UpdateTrayIconText();
-                    });
-                }
-            };
-
-            globalLightController = new GlobalLightController(usbLogic);
-
-            splashScreen = new BBLSplashScreen();
-            splashScreen.Show();
-
-            lightsWindow = new LightsWindow
-            {
-                ViewModel = viewModel
-            };
-
-            // How can we get an HWnd without having to (briefly) show the lights window?
-            var hwndWindow = splashScreen;
-            var hwndSource = PresentationSource.FromVisual(hwndWindow) as HwndSource;
-            hwndSource.AddHook(WndProc);
-
-            SimConnectConnection.HWnd = new WindowInteropHelper(hwndWindow).Handle;
-            SimConnectConnection.Connection.OnAircraftLoaded += Connection_OnAircraftLoaded;
-            SimConnectConnection.Connection.OnSimStateChanged += Connection_OnSimStateChanged;
-            SimConnectConnection.Connection.OnInMainMenuChanged += Connection_OnInMainMenuChanged;
-            Connection_OnInMainMenuChanged(null, EventArgs.Empty);
-
-            var toolStrip = new Forms.ContextMenuStrip();
-            var productLabel = new Forms.ToolStripLabel { Text = ProgramInfo.ProductNameAndVersion };
-            toolStrip.Items.Add(productLabel);
-
-            CheckForNewVersionAsync(productLabel);
-
-            var btnDebug = new Forms.ToolStripButton(BravoLights.Properties.Resources.TrayIconMenuDebugger)
-            {
-                Dock = Forms.DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleLeft,
-                Image = BravoLights.Properties.Resources.DebuggerImage,
-                ImageAlign = ContentAlignment.MiddleLeft
-            };
-            btnDebug.Click += BtnDebug_Click;
-            toolStrip.Items.Add(btnDebug);
-
-            var btnVariableList = new Forms.ToolStripButton("Variable List (Experimental)")
-            {
-                Dock = Forms.DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleLeft,
-                Image = BravoLights.Properties.Resources.TableImage,
-                ImageAlign = ContentAlignment.MiddleLeft
-            };
-            btnVariableList.Click += BtnVariableList_Click;
-            toolStrip.Items.Add(btnVariableList);
-
-            var btnExit = new Forms.ToolStripButton(BravoLights.Properties.Resources.TrayIconMenuExit)
-            {
-                Dock = Forms.DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleLeft,
-                Image = BravoLights.Properties.Resources.ExitImage,
-                ImageAlign = ContentAlignment.MiddleLeft
-            };
-            btnExit.Click += BtnExit_Click;
-            toolStrip.Items.Add(btnExit);
-
-            notifyIcon = new Forms.NotifyIcon
-            {
-                Icon = BravoLights.Properties.Resources.TrayIcon,
-                Visible = true,
-                ContextMenuStrip = toolStrip,
-            };
-            notifyIcon.DoubleClick += BtnDebug_Click;
-            UpdateTrayIconText();
-
-            var userConfig = new FileConfig(FlightSimulatorPaths.UserConfigIniPath);
-            var builtInConfig = new FileConfig(FlightSimulatorPaths.BuiltInConfigIniPath);
-            config = new ConfigChain(userConfig, builtInConfig);
-            config.OnConfigChanged += Config_OnConfigChanged;
-            userConfig.Monitor();
-            builtInConfig.Monitor();
+                mainWindow.ShowAndActivate();
+            }
 
             // Strictly speaking we only really need to connect once we have variable-based light expressions registered,
             // but in practice we want to know if the sim has exited, even if we never use it.
             SimConnectConnection.Connection.Start();
         }
 
-        private async void CheckForNewVersionAsync(Forms.ToolStripLabel productLabel)
+        /// <summary>
+        /// SimConnect posts window messages to tell us when data is waiting. Use a hidden message-only window for that.
+        /// </summary>
+        private void CreateSimConnectMessageWindow()
         {
-            if (await ProgramInfo.IsNewVersionAvailableAsync())
+            var parameters = new HwndSourceParameters("BetterBravoLightsSimConnect")
             {
-                productLabel.Text += $" (New version {await ProgramInfo.GetLatestVersionStringAsync()} available)";
-            }
+                Width = 0,
+                Height = 0,
+                WindowStyle = 0,
+                ParentWindow = new IntPtr(-3) // HWND_MESSAGE
+            };
+            messageWindow = new HwndSource(parameters);
+            messageWindow.AddHook(WndProc);
+            SimConnectConnection.HWnd = messageWindow.Handle;
         }
-
-        private void Connection_OnInMainMenuChanged(object sender, EventArgs e)
-        {
-            globalLightController.SimulatorInMainMenu = SimConnectConnection.Connection.InMainMenu;
-        }
-
-        private void BtnExit_Click(object sender, EventArgs e)
-        {
-            logger.Debug("User requested exit");
-            ExitApplication();
-        }
-
-        private void BtnDebug_Click(object sender, EventArgs e)
-        {
-            logger.Debug("User requested debugger UI");
-
-            lightsWindow.Show();
-            lightsWindow.Activate();
-        }
-
-        private void BtnVariableList_Click(object sender, EventArgs e)
-        {
-            if (variableList == null)
-            {
-                variableList = new VariableList();
-                variableList.Show();
-
-                variableList.Closed += delegate
-                {
-                    variableList = null;
-                };
-            }
-        }
-
-        protected override void OnExit(ExitEventArgs e)
-        {
-            logger.Debug("OnExit");
-
-            if (notifyIcon != null)
-            {
-                notifyIcon.Dispose();
-            }
-            base.OnExit(e);
-        }
-
-        private const int WM_USER_SIMCONNECT = 0x0402;
 
         private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
@@ -349,69 +200,266 @@ namespace BravoLights
             return IntPtr.Zero;
         }
 
-        private void Connection_OnSimStateChanged(object sender, SimStateEventArgs e)
+        private void CreateNotifyIcon()
         {
-            viewModel.SimState = e.SimState;
-            Dispatcher.Invoke(delegate
+            var menu = new Forms.ContextMenuStrip();
+            var productLabel = new Forms.ToolStripLabel { Text = ProgramInfo.ProductNameAndVersion, Font = new Font(Forms.Control.DefaultFont, System.Drawing.FontStyle.Bold) };
+            menu.Items.Add(productLabel);
+            menu.Items.Add(new Forms.ToolStripSeparator());
+            menu.Items.Add("Dashboard", BravoLights.Properties.Resources.DebuggerImage, (s, e) => ShowPage(Page.Dashboard));
+            menu.Items.Add("Aircraft profiles", null, (s, e) => ShowPage(Page.Profiles));
+            menu.Items.Add("Variable scanner", BravoLights.Properties.Resources.TableImage, (s, e) => ShowPage(Page.Scanner));
+            menu.Items.Add("Settings", null, (s, e) => ShowPage(Page.Settings));
+            menu.Items.Add(new Forms.ToolStripSeparator());
+            menu.Items.Add("Light test", null, (s, e) => core.RunLightTest());
+            menu.Items.Add(new Forms.ToolStripSeparator());
+            menu.Items.Add(BravoLights.Properties.Resources.TrayIconMenuExit, BravoLights.Properties.Resources.ExitImage, (s, e) =>
             {
-                globalLightController.SimulatorConnected = (e.SimState == SimState.SimRunning);
-
-                logger.Debug("SimState {0}", e.SimState);
-
-                switch (e.SimState)
-                {
-                    case SimState.SimExited:
-                        // MSFS has exited, so we will too.
-                        ExitApplication();
-                        return;
-                }
-
-                UpdateTrayIconText();
+                logger.Debug("User requested exit");
+                ExitApplication();
             });
-        }
 
-
-        private void UpdateTrayIconText()
-        {
-            var format = usbLogic.BravoPresent ?
-                viewModel.SimState == SimState.SimRunning ?
-                    BravoLights.Properties.Resources.TrayIconConnectedToSimFormat
-                    : BravoLights.Properties.Resources.TrayIconWaitingForSimFormat
-                    : BravoLights.Properties.Resources.TrayIconNoBravoThrottleConnectedFormat;
-
-            notifyIcon.Text = string.Format(format, ProgramInfo.ProductNameAndVersion);
-        }
-
-        private void Connection_OnAircraftLoaded(object sender, AircraftEventArgs e)
-        {
-            if (e.Aircraft != viewModel.Aircraft)
+            notifyIcon = new Forms.NotifyIcon
             {
-                logger.Debug("Aircraft loaded: {0}", e.Aircraft);
+                Icon = BravoLights.Properties.Resources.TrayIcon,
+                Visible = true,
+                ContextMenuStrip = menu,
+            };
+            notifyIcon.DoubleClick += (s, e) => ShowPage(null);
+            UpdateTrayIconText();
 
-                viewModel.Aircraft = e.Aircraft;
-                Config_OnConfigChanged(null, null);
+            CheckForNewVersionAsync(productLabel);
+        }
+
+        private async void CheckForNewVersionAsync(Forms.ToolStripLabel productLabel)
+        {
+            if (!core.Settings.CheckForUpdates)
+            {
+                return;
+            }
+            if (await ProgramInfo.IsNewVersionAvailableAsync())
+            {
+                productLabel.Text += $" (new version {await ProgramInfo.GetLatestVersionStringAsync()} available)";
             }
         }
 
-        private void Config_OnConfigChanged(object sender, EventArgs e)
+        private void ShowPage(Page? page)
         {
-            logger.Debug("ConfigChanged");
+            Dispatcher.Invoke(() =>
+            {
+                if (page.HasValue)
+                {
+                    shell.CurrentPage = page.Value;
+                }
+                mainWindow.ShowAndActivate();
+            });
+        }
 
-            // Turn off the lights whilst we reconfigure everything
-            globalLightController.ReadingConfiguration = true;
+        private void MainWindow_HiddenToTray(object sender, EventArgs e)
+        {
+            if (!shownTrayHint)
+            {
+                shownTrayHint = true;
+                notifyIcon.ShowBalloonTip(3000, "Better Bravo Lights", "Still running in the notification area. Right-click the icon to exit.", Forms.ToolTipIcon.Info);
+            }
+        }
 
-            var lightExpressions = LightExpressionConfig.ComputeLightExpressions(config, viewModel.Aircraft);
-            viewModel.RegisterLights(lightExpressions);
+        private void UpdateTrayIconText()
+        {
+            if (notifyIcon == null)
+            {
+                return;
+            }
 
-            globalLightController.ReadingConfiguration = false;
+            string status;
+            if (!core.BravoPresent)
+            {
+                status = "No Bravo throttle found";
+            }
+            else if (core.SimState == SimState.SimRunning)
+            {
+                status = core.ActiveProfile != null ? $"Profile: {core.ActiveProfile.Name}" : "Connected";
+            }
+            else
+            {
+                status = "Waiting for the simulator";
+            }
+
+            // NotifyIcon text is limited to 127 characters
+            var text = $"Better Bravo Lights\n{status}";
+            notifyIcon.Text = text.Length > 127 ? text[..127] : text;
+        }
+
+        private void Core_SimulatorExited(object sender, EventArgs e)
+        {
+            logger.Info("Simulator exited");
+            if (core.Settings.ExitWithSimulator)
+            {
+                // MSFS has exited, so we will too.
+                ExitApplication();
+            }
+        }
+
+        /// <summary>
+        /// The first time the new version runs, offer to bring across the user's old Config.ini customisations.
+        /// </summary>
+        private void OfferLegacyImport()
+        {
+            if (core.Settings.LegacyConfigImportOffered)
+            {
+                return;
+            }
+            core.Settings.LegacyConfigImportOffered = true;
+            core.Settings.Save();
+
+            var legacyPath = FlightSimulatorPaths.LegacyUserConfigIniPath;
+            if (legacyPath == null || !File.Exists(legacyPath))
+            {
+                return;
+            }
+
+            try
+            {
+                var profiles = LegacyIniImporter.ImportFile(legacyPath);
+                if (profiles.Count == 0)
+                {
+                    return;
+                }
+
+                var answer = MessageBox.Show(
+                    $"Better Bravo Lights now uses a separate profile for each aircraft.\n\nYour old configuration file\n{legacyPath}\ncontains {profiles.Count} custom section(s). Import them as profiles?",
+                    "Better Bravo Lights", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                if (answer == MessageBoxResult.Yes)
+                {
+                    foreach (var p in profiles)
+                    {
+                        if (p.IsDefault)
+                        {
+                            // The user's old [Default] overrides become a normal profile they can merge by hand
+                            p.IsDefault = false;
+                            p.Id = Guid.NewGuid().ToString("N");
+                            p.Name = "Imported defaults (from Config.ini)";
+                            p.Enabled = false;
+                        }
+                    }
+                    core.Store.Import(profiles, ImportConflictMode.KeepBoth);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Warn(ex, "Failed to import legacy config");
+            }
+        }
+
+        private void OfferWasmInstallIfMissing()
+        {
+            if (startedBySimulator)
+            {
+                return;
+            }
+
+            try
+            {
+                var sims = SimInstallation.Detect();
+                var missing = sims.Where(s => s.InstalledWasmModulePath != null && Installer.GetInstalledWasmModuleVersion(s) != Installer.IncludedWasmModuleVersion).ToList();
+                if (missing.Count == 0)
+                {
+                    return;
+                }
+
+                var names = string.Join("\n", missing.Select(s => "• " + s.DisplayName));
+                var answer = MessageBox.Show(
+                    $"Lights that use L: variables need the Better Bravo Lights WASM module in the simulator's Community folder. It's missing or out of date for:\n\n{names}\n\nInstall it now?",
+                    "Better Bravo Lights", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                if (answer == MessageBoxResult.Yes)
+                {
+                    Installer.InstallWasmModules(missing);
+                    MessageBox.Show("The WASM module is now installed. If the simulator was already running it will need to be restarted.", "Better Bravo Lights");
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Warn(ex, "Failed to check/install WASM module");
+            }
+        }
+
+        private async void RenderPagesAsync(string outputDirectory)
+        {
+            Directory.CreateDirectory(outputDirectory);
+            mainWindow.WindowStartupLocation = WindowStartupLocation.Manual;
+            mainWindow.Left = -20000;
+            mainWindow.Top = -20000;
+            mainWindow.ShowInTaskbar = false;
+            mainWindow.Show();
+
+            var shots = new (string Name, Action Setup)[]
+            {
+                ("Dashboard", () => shell.CurrentPage = Page.Dashboard),
+                ("Profiles", () => shell.CurrentPage = Page.Profiles),
+                ("ProfileEditor", () => shell.ShowProfile(core.Profiles.FirstOrDefault(p => !p.IsDefault && p.MasterEnable != null)?.Id)),
+                ("Scanner", () => shell.CurrentPage = Page.Scanner),
+                ("ScannerSimVars", () => shell.Scanner.ShowSimVars = true),
+                ("Settings", () => shell.CurrentPage = Page.Settings),
+            };
+
+            foreach (var (page, setup) in shots)
+            {
+                setup();
+                await System.Threading.Tasks.Task.Delay(1500);
+                mainWindow.UpdateLayout();
+
+                var content = (FrameworkElement)mainWindow.Content;
+                var bitmap = new System.Windows.Media.Imaging.RenderTargetBitmap(
+                    (int)content.ActualWidth, (int)content.ActualHeight, 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
+                var visual = new System.Windows.Media.DrawingVisual();
+                using (var dc = visual.RenderOpen())
+                {
+                    dc.DrawRectangle((System.Windows.Media.Brush)FindResource("BgBrush"), null, new Rect(0, 0, content.ActualWidth, content.ActualHeight));
+                    dc.DrawRectangle(new System.Windows.Media.VisualBrush(content), null, new Rect(0, 0, content.ActualWidth, content.ActualHeight));
+                }
+                bitmap.Render(visual);
+
+                var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
+                encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bitmap));
+                using var stream = File.Create(Path.Combine(outputDirectory, $"{page}.png"));
+                encoder.Save(stream);
+            }
+
+            ExitApplication();
+        }
+
+        private static void ConvertIni(string iniPath, string outputDirectory)
+        {
+            Directory.CreateDirectory(outputDirectory);
+            foreach (var profile in LegacyIniImporter.ImportFile(iniPath))
+            {
+                profile.Description = profile.IsDefault ? profile.Description : null;
+                ProfileStore.ExportProfile(profile, Path.Combine(outputDirectory, profile.Id + ProfileStore.ProfileExtension));
+            }
         }
 
         private void ExitApplication()
         {
-            logger.Debug("Application exiting");
-            globalLightController.ApplicationExiting = true;
-            notifyIcon.Dispose();
-            Current.Shutdown();
+            logger.Info("Application exiting");
+            core.GlobalLights.ApplicationExiting = true;
+            if (mainWindow != null)
+            {
+                mainWindow.AllowClose = true;
+                mainWindow.Close();
+            }
+            notifyIcon?.Dispose();
+            notifyIcon = null;
+            core.Dispose();
+            Shutdown();
+        }
+
+        protected override void OnExit(ExitEventArgs e)
+        {
+            logger.Debug("OnExit");
+            notifyIcon?.Dispose();
+            messageWindow?.Dispose();
+            singleInstanceMutex?.Dispose();
+            base.OnExit(e);
         }
     }
 }

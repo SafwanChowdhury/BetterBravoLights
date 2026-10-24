@@ -1,0 +1,30 @@
+{
+  "format": "BetterBravoLights.Profile",
+  "version": 1,
+  "id": "asobo-textron-aviation-cessna-172-skyhawk-g1000",
+  "name": "Asobo Textron Aviation Cessna 172 Skyhawk (G1000)",
+  "enabled": true,
+  "aircraft": [
+    "Asobo_C172sp_AS1000",
+    "Asobo_C172sp_AS1000_Floaters",
+    "Asobo_C172sp_AS1000_Skis",
+    "Asobo_C172sp_classic",
+    "Asobo_C172SP_Classic_Floats",
+    "Asobo_C172SP_Classic_Skis"
+  ],
+  "inheritDefault": true,
+  "lights": {
+    "LowOilPressure": {
+      "expression": "A:GENERAL ENG OIL PRESSURE:1, psi <= 20",
+      "note": "From panel\\panel.xml"
+    },
+    "LowVolts": {
+      "expression": "A:ELECTRICAL MAIN BUS VOLTAGE:3, volts <= 25.5",
+      "note": "From panel\\panel.xml"
+    },
+    "Vacuum": {
+      "expression": "A:SUCTION PRESSURE, inch of mercury < 3.5",
+      "note": "From panel\\panel.xml"
+    }
+  }
+}

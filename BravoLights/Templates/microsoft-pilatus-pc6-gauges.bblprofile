@@ -1,0 +1,36 @@
+{
+  "format": "BetterBravoLights.Profile",
+  "version": 1,
+  "id": "microsoft-pilatus-pc6-gauges",
+  "name": "Microsoft Pilatus PC6 (gauges)",
+  "enabled": true,
+  "aircraft": [
+    "Microsoft_Pilatus_PC6_Gauge_Skis",
+    "Microsoft_Pilatus_PC6_Gauge_Wheels"
+  ],
+  "inheritDefault": true,
+  "lights": {
+    "LowVolts": {
+      "expression": "A:ELECTRICAL MAIN BUS VOLTAGE, volts < 25.5",
+      "note": "From panel.xml"
+    },
+    "Vacuum": {
+      "expression": "A:SUCTION PRESSURE, inch of mercury < 3.5",
+      "note": "From panel.xml"
+    },
+    "LowFuelPressure": {
+      "expression": "A:GENERAL ENG FUEL PRESSURE:1, psi < 5.5",
+      "note": "From panel.xml"
+    },
+    "LowOilPressure": {
+      "expression": "A:GENERAL ENG OIL PRESSURE:1, psi < 85",
+      "note": "From panel.xml"
+    },
+    "AuxFuelPump": {
+      "expression": "L:PC6_AUX_FUEL_BOOST_PUMP == 1 OR L:XMLVAR_BOOSTER_PUMP_TEST == 1"
+    },
+    "StarterEngaged": {
+      "expression": "L:XMLVAR_STARTER_ON_TEST == 1 OR A:GENERAL ENG STARTER:1, bool == 1"
+    }
+  }
+}

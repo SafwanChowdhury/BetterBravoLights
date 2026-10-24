@@ -1,0 +1,17 @@
+{
+  "format": "BetterBravoLights.Profile",
+  "version": 1,
+  "id": "asobo-boeing-f-a-18e-f-super-hornet",
+  "name": "Asobo Boeing F/A-18E/F Super Hornet",
+  "enabled": true,
+  "aircraft": [
+    "Asobo_FA18E"
+  ],
+  "inheritDefault": true,
+  "lights": {
+    "LowOilPressure": {
+      "expression": "A:GENERAL ENG OIL PRESSURE:1, psi < 42 OR A:GENERAL ENG OIL PRESSURE:2, psi < 42",
+      "note": "From engine start check list"
+    }
+  }
+}

@@ -1,15 +1,44 @@
-﻿using Xunit;
+﻿using System.Linq;
+using BravoLights.Profiles;
+using BravoLights.Sim;
+using Xunit;
 
 namespace BravoLights.Tests
 {
+    /// <summary>
+    /// Tests that the old INI configuration format is converted into profiles with the same meaning.
+    /// </summary>
     public class ConfigTests
     {
-        private static IConfig CreateConfig(string file)
+        private sealed class ImportedConfig
         {
-            var config = new FileConfig("Config.ini");
-            config.LoadConfig(file.Split('\r', '\n'));
-            return config;
+            private readonly System.Collections.Generic.IList<Profile> profiles;
+
+            public ImportedConfig(string file)
+            {
+                profiles = LegacyIniImporter.Import(file.Split('\r', '\n'));
+            }
+
+            /// <summary>
+            /// Gets the expression for a light as the old configuration system would have done:
+            /// the aircraft's own setting, falling back to the [Default] section.
+            /// </summary>
+            public string GetConfig(string aircraft, string key)
+            {
+                var match = ProfileMatcher.Resolve(profiles, new AircraftInfo(aircraft, aircraft, ""));
+                var defaultProfile = profiles.FirstOrDefault(p => p.IsDefault);
+                var profile = match.Profile;
+
+                if (key == "MasterEnable")
+                {
+                    return profile?.MasterEnable ?? defaultProfile?.MasterEnable;
+                }
+
+                return profile?.GetLight(key)?.Expression ?? defaultProfile?.GetLight(key)?.Expression;
+            }
         }
+
+        private static ImportedConfig CreateConfig(string file) => new(file);
 
         [Fact]
         public void IgnoresComments()
@@ -52,8 +81,8 @@ HDG = 3 > 4
             Assert.Equal("1 < 2", config.GetConfig("Aircraft1", "LowFuelPressure"));
             Assert.Equal("2 < 3", config.GetConfig("Aircraft2", "LowFuelPressure"));
             Assert.Equal("3 > 4", config.GetConfig("Aircraft1", "HDG"));
-
         }
+
         [Fact]
         public void AllowsAircraftToOverrideOrFallbackToDefault()
         {
@@ -118,6 +147,81 @@ LowFuelPressure = {extraSpaces}\{extraSpaces}
     OR L:I_OH_FUEL_CENTER_2_U == 1{extraSpaces}");
 
             Assert.Equal("L:I_OH_FUEL_CENTER_1_L == 1 OR L:I_OH_FUEL_CENTER_1_U == 1 OR L:I_OH_FUEL_CENTER_2_L == 1 OR L:I_OH_FUEL_CENTER_2_U == 1", config.GetConfig("Aircraft", "LowFuelPressure"));
+        }
+
+        [Fact]
+        public void TreatsHashLinesAsComments()
+        {
+            var config = CreateConfig(@"
+[Aircraft.A]
+# AVAIL is illuminated
+APU = L:I_OH_ELEC_APU_START_U == 1
+");
+            Assert.Equal("L:I_OH_ELEC_APU_START_U == 1", config.GetConfig("A", "APU"));
+        }
+
+        [Fact]
+        public void ReducesMsfs2024PresetPathsToTheAircraftFolder()
+        {
+            var profiles = LegacyIniImporter.Import(@"
+;; Fenix A32X
+[Aircraft.FNX_32X\presets\fnx\FNX_320_CFM\config, Aircraft.FNX_32X\presets\fnx\FNX_321_IAE\config]
+APR = L:I_FCU_APPR == 1
+".Split('\n'));
+
+            var fenix = Assert.Single(profiles);
+            Assert.Equal("Fenix A32X", fenix.Name);
+            Assert.Equal(new[] { "FNX_32X" }, fenix.Aircraft);
+        }
+
+        [Fact]
+        public void UsesHeaderCommentsAsProfileNamesAndKeyCommentsAsNotes()
+        {
+            var profiles = LegacyIniImporter.Import(@"
+;;; A group heading which is ignored
+
+;; PMDG 737-800
+[Aircraft.PMDG 737-800]
+; Thanks to someone for this
+REV = L:ngx_MCP_VNav > 0
+".Split('\n'));
+
+            var pmdg = Assert.Single(profiles);
+            Assert.Equal("PMDG 737-800", pmdg.Name);
+            Assert.Equal("Thanks to someone for this", pmdg.Lights["REV"].Note);
+        }
+
+        [Fact]
+        public void ConvertsInvertIntoPerLightInvertFlags()
+        {
+            var profiles = LegacyIniImporter.Import(@"
+[Default]
+Door = L:DOOR == 1
+
+[Aircraft.A]
+ParkingBrake = L:BRAKE == 1
+Invert = ParkingBrake, Door
+".Split('\n'));
+
+            var a = profiles.Single(p => !p.IsDefault);
+            Assert.True(a.Lights["ParkingBrake"].Invert);
+            // Door wasn't defined for the aircraft, so the inherited expression is brought in so it can be inverted
+            Assert.True(a.Lights["Door"].Invert);
+            Assert.Equal("L:DOOR == 1", a.Lights["Door"].Expression);
+        }
+
+        [Fact]
+        public void ImportsMasterEnable()
+        {
+            var config = CreateConfig(@"
+[Default]
+MasterEnable = A:CIRCUIT GENERAL PANEL ON, bool == 1
+
+[Aircraft.A]
+MasterEnable = L:BATT == 1
+");
+            Assert.Equal("L:BATT == 1", config.GetConfig("A", "MasterEnable"));
+            Assert.Equal("A:CIRCUIT GENERAL PANEL ON, bool == 1", config.GetConfig("B", "MasterEnable"));
         }
     }
 }

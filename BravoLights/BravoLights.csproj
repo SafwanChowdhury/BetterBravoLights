@@ -2,15 +2,20 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net5.0-windows</TargetFramework>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <PlatformTarget>x64</PlatformTarget>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
-    <Version>0.9.0</Version>
+    <Version>1.0.0</Version>
     <Authors>Royston Shufflebotham &lt;royston@shufflebotham.org&gt;</Authors>
     <Product>Better Bravo Lights</Product>
-    <Copyright>(C) 2021-2022 Royston Shufflebotham &lt;royston@shufflebotham.org&gt;</Copyright>
+    <Copyright>(C) 2021-2026 Royston Shufflebotham and contributors</Copyright>
     <PackageId>BetterBravoLights</PackageId>
     <AssemblyName>BetterBravoLights</AssemblyName>
+    <ApplicationIcon>Resources\TrayIcon.ico</ApplicationIcon>
+    <!-- The SimConnect native library is x64 only -->
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>false</SelfContained>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,20 +23,32 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.39" />
-    <PackageReference Include="NLog" Version="4.7.13" />
+    <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
+    <PackageReference Include="NLog" Version="5.3.4" />
     <PackageReference Include="sly" Version="2.8.0" />
-    <PackageReference Include="System.Text.Encoding.CodePages" Version="5.0.0" />
   </ItemGroup>
-  
+
+  <!--
+    SimConnect is vendored from the MSFS SDK so that the app can be built without the SDK installed.
+    The v11 managed wrapper talks to both MSFS 2020 and MSFS 2024.
+  -->
   <ItemGroup>
     <Reference Include="Microsoft.FlightSimulator.SimConnect">
-      <HintPath>C:\MSFS SDK\SimConnect SDK\lib\managed\Microsoft.FlightSimulator.SimConnect.dll</HintPath>
+      <HintPath>..\lib\SimConnect\Microsoft.FlightSimulator.SimConnect.dll</HintPath>
     </Reference>
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="C:\MSFS SDK\SimConnect SDK\lib\SimConnect.dll" Link="SimConnect.dll">
+    <None Include="..\lib\SimConnect\SimConnect.dll" Link="SimConnect.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <!--
+    The prebuilt LVar WASM module. Rebuild it with the MSFS SDK (see README) if WasmModule.cpp changes.
+  -->
+  <ItemGroup>
+    <None Include="..\WasmModule\Prebuilt\better-bravo-lights-lvar-module\**\*" LinkBase="Packages\better-bravo-lights-lvar-module">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
@@ -58,18 +75,18 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
-  
+
   <ItemGroup>
-    <None Update="Config.BuiltIn.ini">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="Config.User.ini">
+    <None Update="Templates\**\*.bblprofile">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="KnownSimVars.csv">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="LICENSES.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\BetterBravoLights.exe.nlog" Link="BetterBravoLights.exe.nlog">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

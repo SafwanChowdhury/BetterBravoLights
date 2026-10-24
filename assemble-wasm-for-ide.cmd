@@ -1,11 +1,13 @@
-rd/s/q BravoLights\bin\Debug\net5-windows\better-bravo-lights-lvar-module
-rd/s/q BravoLights\bin\Release\net5-windows\better-bravo-lights-lvar-module
+@echo off
+rem Rebuilds the LVar WASM module package with the MSFS SDK and refreshes the prebuilt copy in WasmModule\Prebuilt,
+rem which is what the app ships with. Build the WasmModule project (Release|MSFS) in Visual Studio first.
 
-rem Builds the WASM module and installs it into the Debug output directory for the project.
-"%MSFS_SDK%Tools\bin\fspackagetool.exe" MSFSWASMProject\BetterBravoLightsLVars.xml -outputdir BravoLights\bin\Debug\net5.0-windows
+if "%MSFS_SDK%"=="" (
+    echo The MSFS_SDK environment variable isn't set. Install the MSFS SDK first.
+    exit /b 1
+)
 
-rem And another copy for the Release dir
-echo D | xcopy /c/d/e/h/k BravoLights\bin\Debug\net5.0-windows\Packages BravoLights\bin\Release\net5.0-windows\Packages
+"%MSFS_SDK%Tools\bin\fspackagetool.exe" MSFSWASMProject\BetterBravoLightsLVars.xml -outputdir MSFSWASMProject\_Build || exit /b 1
 
-rem And another copy for unit tests
-echo D | xcopy /c/d/e/h/k BravoLights\bin\Debug\net5.0-windows\Packages BravoLights.Tests\bin\Debug\net5.0-windows\Packages
+rd /s /q WasmModule\Prebuilt\better-bravo-lights-lvar-module
+xcopy /e /i /y MSFSWASMProject\_Build\Packages\better-bravo-lights-lvar-module WasmModule\Prebuilt\better-bravo-lights-lvar-module

@@ -1,0 +1,33 @@
+{
+  "format": "BetterBravoLights.Profile",
+  "version": 1,
+  "id": "microsoft-pilatus-pc6-g950",
+  "name": "Microsoft Pilatus PC6 (G950)",
+  "enabled": true,
+  "aircraft": [
+    "Microsoft_Pilatus_PC6_G950_Floats",
+    "Microsoft_Pilatus_PC6_G950_Wheels"
+  ],
+  "inheritDefault": true,
+  "lights": {
+    "LowVolts": {
+      "expression": "A:ELECTRICAL MAIN BUS VOLTAGE, volts < 25.5",
+      "note": "From panel.xml"
+    },
+    "Vacuum": {
+      "expression": "A:SUCTION PRESSURE, inch of mercury < 3.5",
+      "note": "From panel.xml"
+    },
+    "LowFuelPressure": {
+      "expression": "A:GENERAL ENG FUEL PRESSURE:1, psi < 5.5",
+      "note": "From panel.xml"
+    },
+    "LowOilPressure": {
+      "expression": "A:GENERAL ENG OIL PRESSURE:1, psi < 80",
+      "note": "From panel.xml"
+    },
+    "AuxFuelPump": {
+      "expression": "L:PC6_AUX_FUEL_BOOST_PUMP == 1 OR L:XMLVAR_G950_LH_FUEL_PUMP_MOM_LO_COUNT != 3 OR L:XMLVAR_G950_RH_FUEL_PUMP_MOM_LO_COUNT != 3"
+    }
+  }
+}

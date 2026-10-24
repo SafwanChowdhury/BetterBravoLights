@@ -1,0 +1,83 @@
+{
+  "format": "BetterBravoLights.Profile",
+  "version": 1,
+  "id": "pmdg-777",
+  "name": "PMDG 777",
+  "description": "Uses the same LVars as the PMDG 737 profile. If a light misbehaves, check it with the Variable scanner.",
+  "enabled": true,
+  "aircraft": [
+    "PMDG 777-*"
+  ],
+  "inheritDefault": true,
+  "lights": {
+    "HDG": {
+      "expression": "L:ngx_MCP_HdgSel > 0"
+    },
+    "NAV": {
+      "expression": "L:ngx_MCP_LNav > 0"
+    },
+    "APR": {
+      "expression": "L:ngx_MCP_App > 0"
+    },
+    "REV": {
+      "expression": "L:ngx_MCP_VNav > 0",
+      "note": "Thanks to @Flintstone2k12 for the REV/VNav mapping!"
+    },
+    "ALT": {
+      "expression": "L:ngx_MCP_AltHold > 0"
+    },
+    "VS": {
+      "expression": "L:ngx_MCP_VS > 0"
+    },
+    "IAS": {
+      "expression": "L:ngx_MCP_LvlChg > 0"
+    },
+    "AUTOPILOT": {
+      "expression": "L:ngx_MCP_CMDA > 0 OR L:ngx_MCP_CMDB > 0"
+    },
+    "EngineFire": {
+      "expression": "L:switch_6972_73X != 0 OR L:switch_6982_73X != 0 OR L:switch_6992_73X != 0",
+      "note": "ENG1, APU and ENG2 fire lights"
+    },
+    "LowOilPressure": {
+      "expression": "OFF",
+      "note": "PMDG 737 shows Low Oil Pressure warning in the engine status display, but the oil pressure reported to MSFS doesn't seem to correspond to anything"
+    },
+    "LowFuelPressure": {
+      "expression": "L:switch_41_73X > 0 OR L:switch_42_73X > 0 OR L:switch_43_73X > 0 OR L:switch_44_73X > 0 OR L:switch_47_73X > 0 OR L:switch_48_73X > 0",
+      "note": "Monitor the 6 fuel pressure lights"
+    },
+    "AntiIce": {
+      "expression": "L:switch_142_73X != 0 OR L:switch_143_73X != 0 OR L:switch_144_73X != 0 OR L:switch_145_73X != 0 OR L:switch_146_73X != 0 OR L:switch_147_73X != 0 OR L:switch_148_73X != 0 OR L:switch_149_73X != 0",
+      "note": "CAPT PITOT, L ELEV PITOT, L ALPHA VANE, TEMP PROBE, F/O PITOT, R ELEV PITOT, R ALPHA VANE, AUX PITOT"
+    },
+    "StarterEngaged": {
+      "expression": "L:switch_119_73X != 10 OR L:switch_121_73X != 10",
+      "note": "Either engine is something other than OFF"
+    },
+    "APU": {
+      "expression": "L:switch_118_73X > 0",
+      "note": "APU light is on if the APU switch isn't OFF"
+    },
+    "MasterCaution": {
+      "expression": "L:switch_3481_73X != 0 OR L:switch_4381_73X != 0",
+      "note": "Left and right master caution button lights"
+    },
+    "Vacuum": {
+      "expression": "OFF",
+      "note": "PMDG 737 annunciator does have an 'Anti Ice' entry which is on if either probe heat is off, but these don't seem to be reflected in any A: or L: vars"
+    },
+    "LowHydPressure": {
+      "expression": "L:switch_161_73X > 0 OR L:switch_162_73X > 0 OR L:switch_163_73X > 0 OR L:switch_164_73X > 0",
+      "note": "Monitor the 4 hyd pump pressure lights"
+    },
+    "LowVolts": {
+      "expression": "OFF",
+      "note": "PMDG 737 reports 24V to all voltage variables, even if all power is off, so we can't map LOW VOLTS right now"
+    },
+    "Door": {
+      "expression": "L:FwdLwrCargoDoor > 0 OR L:AftLwrCargoDoor > 0 OR L:FwdLeftCabinDoor > 0 OR L:FwdRightCabinDoor > 0 OR L:AftLeftCabinDoor > 0 OR L:AftRightCabinDoor > 0 OR L:OverwingFwdLeftEmerExit > 0 OR L:OverwingFwdRightEmerExit > 0 OR L:OverwingAftLeftEmerExit > 0 OR L:OverwingAftRightEmerExit > 0 OR L:EEDoor > 0 OR L:AirStairs > 0",
+      "note": "PMDG 737 annunciator reports DOORS light for cabin doors, cargo doors, emergency exits, equipment hatch or air stairs"
+    }
+  }
+}

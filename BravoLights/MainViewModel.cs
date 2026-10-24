@@ -1,14 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using BravoLights.Common;
-using BravoLights.Connections;
-using BravoLights.UI;
 
 namespace BravoLights
 {
+    /// <summary>
+    /// Tracks which lights are currently lit, and feeds that to the Bravo via <see cref="ILightsState"/>.
+    /// </summary>
     public class MainViewModel : ViewModelBase, ILightsState
     {
-        private readonly ISet<string> litLights = new HashSet<string>();
+        private readonly object sync = new();
+        private readonly HashSet<string> litLights = new();
 
         private Dictionary<string, LightExpression> lightExpressions = new();
 
@@ -17,110 +20,126 @@ namespace BravoLights
             get { return lightExpressions; }
         }
 
+        /// <summary>
+        /// Raised when a light turns on or off. The argument is the light name.
+        /// </summary>
+        public event EventHandler<string> LightChanged;
+
         public void RegisterLights(IEnumerable<LightExpression> lights)
         {
             var newExpressions = new Dictionary<string, LightExpression>();
 
+            // Unsubscribe from the old expressions first, so that variables shared by old and new expressions
+            // aren't unsubscribed from the simulator only to be immediately resubscribed.
+            var old = lightExpressions;
+
             foreach (var light in lights)
             {
-                var lightName = light.LightName;
+                newExpressions[light.LightName] = light;
+            }
 
-                newExpressions[lightName] = light;
+            // Make the new expressions current before subscribing, as subscribing delivers the current value immediately
+            lightExpressions = newExpressions;
+
+            foreach (var light in newExpressions.Values)
+            {
                 light.ValueChanged += ExpressionValueChanged;
             }
 
-            foreach (var light in lightExpressions)
+            foreach (var expression in old.Values)
             {
-                var expression = light.Value;
                 if (expression != null)
                 {
                     expression.ValueChanged -= ExpressionValueChanged;
                 }
             }
 
-            SetProperty(ref lightExpressions, newExpressions, nameof(LightExpressions));
+            // Lights which no longer have an expression must go out
+            foreach (var name in old.Keys.Except(newExpressions.Keys).ToList())
+            {
+                SetLit(name, false);
+            }
+
+            RaisePropertyChanged(nameof(LightExpressions));
         }
 
         private void ExpressionValueChanged(object sender, ValueChangedEventArgs e)
         {
             var lightExpression = (LightExpression)sender;
-            var lightName = lightExpression.LightName;
 
+            // Ignore late notifications from expressions we've since replaced
+            if (!lightExpressions.TryGetValue(lightExpression.LightName, out var current) || current != lightExpression)
+            {
+                return;
+            }
 
-            var lit = e.NewValue is not Exception && (bool)e.NewValue;
+            var lit = e.NewValue is bool b && b;
+            SetLit(lightExpression.LightName, lit);
+        }
 
+        private void SetLit(string lightName, bool lit)
+        {
             bool changed;
-            if (lit)
+            lock (sync)
             {
-                changed = litLights.Add(lightName);
-            } else
-            {
-                changed = litLights.Remove(lightName);
+                changed = lit ? litLights.Add(lightName) : litLights.Remove(lightName);
             }
 
             if (changed)
             {
                 RaisePropertyChanged(lightName);
+                LightChanged?.Invoke(this, lightName);
             }
         }
 
-        private string aircraft = "General";
-        public string Aircraft
+        private bool lightTest;
+
+        /// <summary>
+        /// When true, every light is reported as lit, so the user can check their Bravo.
+        /// </summary>
+        public bool LightTest
         {
-            get { return aircraft; }
+            get { return lightTest; }
             set
             {
-                SetProperty(ref aircraft, value);
+                if (lightTest == value)
+                {
+                    return;
+                }
+                lightTest = value;
+                RaisePropertyChanged(nameof(LightTest));
+                foreach (var name in LightNames.AllNames)
+                {
+                    LightChanged?.Invoke(this, name);
+                }
             }
-        }
-
-        private SimState simState = SimState.SimExited;
-        public SimState SimState
-        {
-            get { return simState; }
-            set { SetProperty(ref simState, value); }
         }
 
         public IEnumerable<string> LitLights
         {
-            get { return litLights; }
+            get
+            {
+                if (lightTest)
+                {
+                    return LightNames.AllNames.ToList();
+                }
+                lock (sync)
+                {
+                    return litLights.ToList();
+                }
+            }
         }
 
         public bool IsLit(string lightName)
         {
-            return litLights.Contains(lightName);
+            if (lightTest)
+            {
+                return true;
+            }
+            lock (sync)
+            {
+                return litLights.Contains(lightName);
+            }
         }
-        public bool HDG { get { return IsLit(LightNames.HDG); } }
-        public bool NAV { get { return IsLit(LightNames.NAV); } }
-        public bool APR { get { return IsLit(LightNames.APR); } }
-        public bool REV { get { return IsLit(LightNames.REV); } }
-        public bool ALT { get { return IsLit(LightNames.ALT); } }
-        public bool VS { get { return IsLit(LightNames.VS); } }
-        public bool IAS { get { return IsLit(LightNames.IAS); } }
-        public bool AUTOPILOT { get { return IsLit(LightNames.AUTOPILOT); } }
-
-        public bool MasterWarning { get { return IsLit(LightNames.MasterWarning); } }
-        public bool EngineFire { get { return IsLit(LightNames.EngineFire); } }
-        public bool LowOilPressure { get { return IsLit(LightNames.LowOilPressure); } }
-        public bool LowFuelPressure { get { return IsLit(LightNames.LowFuelPressure); } }
-        public bool AntiIce { get { return IsLit(LightNames.AntiIce); } }
-        public bool StarterEngaged { get { return IsLit(LightNames.StarterEngaged); } }
-        public bool APU { get { return IsLit(LightNames.APU); } }
-        public bool MasterCaution { get { return IsLit(LightNames.MasterCaution); } }
-        public bool Vacuum { get { return IsLit(LightNames.Vacuum); } }
-        public bool LowHydPressure { get { return IsLit(LightNames.LowHydPressure); } }
-        public bool AuxFuelPump { get { return IsLit(LightNames.AuxFuelPump); } }
-        public bool ParkingBrake { get { return IsLit(LightNames.ParkingBrake); } }
-        public bool LowVolts { get { return IsLit(LightNames.LowVolts); } }
-        public bool Door { get { return IsLit(LightNames.Door); } }
-
-        public bool GearCRed {  get { return IsLit(LightNames.GearCRed); } }
-        public bool GearCGreen { get { return IsLit(LightNames.GearCGreen); } }
-        public bool GearLRed { get { return IsLit(LightNames.GearLRed); } }
-        public bool GearLGreen { get { return IsLit(LightNames.GearLGreen); } }
-        public bool GearRRed { get { return IsLit(LightNames.GearRRed); } }
-        public bool GearRGreen { get { return IsLit(LightNames.GearRGreen); } }
-
-
     }
 }

@@ -1,0 +1,21 @@
+{
+  "format": "BetterBravoLights.Profile",
+  "version": 1,
+  "id": "asobo-textron-aviation-beechcraft-bonanza-g36",
+  "name": "Asobo Textron Aviation Beechcraft Bonanza G36",
+  "enabled": true,
+  "aircraft": [
+    "Asobo_Bonanza_G36"
+  ],
+  "inheritDefault": true,
+  "lights": {
+    "LowOilPressure": {
+      "expression": "A:GENERAL ENG OIL PRESSURE:1, psi < 30",
+      "note": "From panel\\panel.xml"
+    },
+    "LowVolts": {
+      "expression": "A:ELECTRICAL MAIN BUS VOLTAGE:1, volts < 25 AND (A:ELECTRICAL BATTERY LOAD:1, amps > 0 OR A:ELECTRICAL BATTERY LOAD:2, amps > 0)",
+      "note": "From panel\\panel.xml"
+    }
+  }
+}

@@ -1,0 +1,101 @@
+{
+  "format": "BetterBravoLights.Profile",
+  "version": 1,
+  "id": "default",
+  "name": "Default (all aircraft)",
+  "description": "Used for any aircraft without its own profile, and for lights that an aircraft profile doesn't define.",
+  "isDefault": true,
+  "enabled": true,
+  "aircraft": [],
+  "inheritDefault": false,
+  "masterEnable": "A:CIRCUIT GENERAL PANEL ON, bool == 1",
+  "lights": {
+    "HDG": {
+      "expression": "A:AUTOPILOT HEADING LOCK, bool == 1"
+    },
+    "NAV": {
+      "expression": "A:AUTOPILOT NAV1 LOCK, bool == 1"
+    },
+    "APR": {
+      "expression": "A:AUTOPILOT APPROACH HOLD, bool == 1"
+    },
+    "REV": {
+      "expression": "A:AUTOPILOT BACKCOURSE HOLD, bool == 1"
+    },
+    "ALT": {
+      "expression": "A:AUTOPILOT ALTITUDE LOCK, bool == 1"
+    },
+    "VS": {
+      "expression": "A:AUTOPILOT VERTICAL HOLD, bool == 1"
+    },
+    "IAS": {
+      "expression": "A:AUTOPILOT FLIGHT LEVEL CHANGE, bool == 1"
+    },
+    "AUTOPILOT": {
+      "expression": "A:AUTOPILOT MASTER, percent over 100 == 1"
+    },
+    "GearLGreen": {
+      "expression": "A:GEAR LEFT POSITION, percent over 100 >= 1"
+    },
+    "GearLRed": {
+      "expression": "A:GEAR LEFT POSITION, percent over 100 > 0 && A:GEAR LEFT POSITION, percent over 100 < 1"
+    },
+    "GearCGreen": {
+      "expression": "A:GEAR CENTER POSITION, percent over 100 >= 1"
+    },
+    "GearCRed": {
+      "expression": "A:GEAR CENTER POSITION, percent over 100 > 0 && A:GEAR CENTER POSITION, percent over 100 < 1"
+    },
+    "GearRGreen": {
+      "expression": "A:GEAR RIGHT POSITION, percent over 100 >= 1"
+    },
+    "GearRRed": {
+      "expression": "A:GEAR RIGHT POSITION, percent over 100 > 0 && A:GEAR RIGHT POSITION, percent over 100 < 1"
+    },
+    "MasterWarning": {
+      "expression": "L:Generic_Master_Warning_Active == 1"
+    },
+    "EngineFire": {
+      "expression": "A:ENG ON FIRE:1, bool == 1 || A:ENG ON FIRE:2, bool == 1 && A:ENG ON FIRE:3, bool == 1 || A:ENG ON FIRE:4, bool == 1"
+    },
+    "LowOilPressure": {
+      "expression": "OFF",
+      "note": "Oil pressures vary wildly from aircraft to aircraft, so there's no good global definition for low oil pressure"
+    },
+    "LowFuelPressure": {
+      "expression": "OFF",
+      "note": "Fuel pressures vary wildly from aircraft to aircraft, so there's no good global definition for low fuel pressure"
+    },
+    "AntiIce": {
+      "expression": "A:PITOT HEAT, bool == 0"
+    },
+    "StarterEngaged": {
+      "expression": "A:GENERAL ENG STARTER:1, bool == 1 || A:GENERAL ENG STARTER:2, bool == 1 || A:GENERAL ENG STARTER:3, bool == 1 || A:GENERAL ENG STARTER:4, bool == 1"
+    },
+    "APU": {
+      "expression": "A:APU GENERATOR SWITCH, bool == 1 OR A:APU GENERATOR ACTIVE, bool == 1"
+    },
+    "MasterCaution": {
+      "expression": "L:Generic_Master_Caution_Active == 1"
+    },
+    "Vacuum": {
+      "expression": "(A:SUCTION PRESSURE, inhg > 0 && A:SUCTION PRESSURE, inhg < 3) || A:PARTIAL PANEL VACUUM, Enum == 1"
+    },
+    "LowHydPressure": {
+      "expression": "OFF"
+    },
+    "AuxFuelPump": {
+      "expression": "A:GENERAL ENG FUEL PUMP ON:1, bool == 1 OR A:GENERAL ENG FUEL PUMP ON:2, bool == 1 OR A:GENERAL ENG FUEL PUMP ON:3, bool == 1 OR A:GENERAL ENG FUEL PUMP ON:4, bool == 1"
+    },
+    "ParkingBrake": {
+      "expression": "A:BRAKE PARKING POSITION, bool == 1"
+    },
+    "LowVolts": {
+      "expression": "A:ELECTRICAL MAIN BUS VOLTAGE, volts < 26",
+      "note": "This will be roughly correct for most 24V planes; 12V planes will need specific overrides"
+    },
+    "Door": {
+      "expression": "A:CANOPY OPEN, percent > 0 OR A:EXIT OPEN:0, percent > 0"
+    }
+  }
+}

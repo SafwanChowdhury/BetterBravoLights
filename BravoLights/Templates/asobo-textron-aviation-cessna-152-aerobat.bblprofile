@@ -1,0 +1,21 @@
+{
+  "format": "BetterBravoLights.Profile",
+  "version": 1,
+  "id": "asobo-textron-aviation-cessna-152-aerobat",
+  "name": "Asobo Textron Aviation Cessna 152 Aerobat",
+  "enabled": true,
+  "aircraft": [
+    "Asobo_C152_Aerobat"
+  ],
+  "inheritDefault": true,
+  "lights": {
+    "LowOilPressure": {
+      "expression": "A:GENERAL ENG OIL PRESSURE:1, psi <= 60",
+      "note": "Files are encrypted; using regular C152 values"
+    },
+    "LowVolts": {
+      "expression": "A:ELECTRICAL BATTERY BUS VOLTAGE, volts < 25.2",
+      "note": "Files are encrypted; doesn't use the regular MAIN BUS VOLTAGE var"
+    }
+  }
+}

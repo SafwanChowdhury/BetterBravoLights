@@ -17,6 +17,16 @@ namespace BravoLights.Connections
         double[] Values { get; }
     }
 
+    public enum LVarModuleStatus
+    {
+        /// <summary>We haven't asked the WASM module anything yet (e.g. not connected to the simulator).</summary>
+        Unknown,
+        /// <summary>The WASM module is talking to us.</summary>
+        Responding,
+        /// <summary>We asked the WASM module for data and it didn't reply. It's probably not installed in this simulator.</summary>
+        NotResponding
+    }
+
     public class LVarManager : IConnection
     {
         public readonly static LVarManager Connection = new();
@@ -94,6 +104,12 @@ namespace BravoLights.Connections
                 return;
             }
 
+            if (ModuleStatus == LVarModuleStatus.NotResponding)
+            {
+                handler(this, new ValueChangedEventArgs { NewValue = new Exception("The Better Bravo Lights WASM module is not responding; is it installed in this simulator's Community folder?") });
+                return;
+            }
+
             if (wasmChannel.SimState == SimState.SimExited)
             {
                 VariableHandlerUtils.SendNoConnectionError(this, handler);
@@ -135,6 +151,43 @@ namespace BravoLights.Connections
             {
                 disableLVars = value;
                 logger.Debug("DisableLVars = {0}", value);
+            }
+        }
+
+        private LVarModuleStatus moduleStatus = LVarModuleStatus.Unknown;
+
+        /// <summary>
+        /// Gets or sets whether the WASM module in the simulator is responding.
+        /// </summary>
+        public LVarModuleStatus ModuleStatus
+        {
+            get { return moduleStatus; }
+            internal set
+            {
+                if (moduleStatus == value)
+                {
+                    return;
+                }
+                logger.Info("LVar module status = {0}", value);
+                moduleStatus = value;
+                OnModuleStatusChanged?.Invoke(this, EventArgs.Empty);
+                if (value == LVarModuleStatus.NotResponding)
+                {
+                    SendAllValues();
+                }
+            }
+        }
+
+        public event EventHandler OnModuleStatusChanged;
+
+        /// <summary>
+        /// Gets the most recent value of an LVar, if we have one (i.e. if something is subscribed to it).
+        /// </summary>
+        public bool TryGetValue(string lvarName, out double value)
+        {
+            lock (this)
+            {
+                return lvarValues.TryGetValue(lvarName, out value);
             }
         }
 
