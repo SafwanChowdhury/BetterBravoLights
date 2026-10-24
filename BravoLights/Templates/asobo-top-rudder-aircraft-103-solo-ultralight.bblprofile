@@ -1,0 +1,17 @@
+{
+  "format": "BetterBravoLights.Profile",
+  "version": 1,
+  "id": "asobo-top-rudder-aircraft-103-solo-ultralight",
+  "name": "Asobo Top Rudder Aircraft 103 Solo Ultralight",
+  "enabled": true,
+  "aircraft": [
+    "Asobo_103Solo_SmallWheels"
+  ],
+  "inheritDefault": true,
+  "lights": {
+    "LowVolts": {
+      "expression": "A:ELECTRICAL MAIN BUS VOLTAGE:1, volts < 13",
+      "note": "Files are encrypted; 12V based"
+    }
+  }
+}

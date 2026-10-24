@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Security.Principal;
 using System.Text;
 using System.Text.Json;
@@ -28,11 +30,27 @@ namespace BravoLights.Installation
 
         public string OriginalContent { get; private set; }
         public string RepairedContent { get; private set; }
+    }
 
-        public override string ToString()
-        {
-            return base.ToString();
-        }
+    /// <summary>
+    /// The installation state of Better Bravo Lights for one simulator.
+    /// </summary>
+    public sealed class SimInstallationStatus
+    {
+        public SimInstallation Sim { get; init; }
+        public bool AutoStartEnabled { get; init; }
+        public string AutoStartPath { get; init; }
+        public string InstalledWasmVersion { get; init; }
+        public string IncludedWasmVersion { get; init; }
+        public string Problem { get; init; }
+
+        public bool WasmUpToDate => InstalledWasmVersion != null && InstalledWasmVersion == IncludedWasmVersion;
+
+        /// <summary>
+        /// Whether auto-start points at this copy of Better Bravo Lights.
+        /// </summary>
+        public bool AutoStartIsThisCopy => AutoStartPath != null &&
+            string.Equals(Path.GetFullPath(AutoStartPath), Path.GetFullPath(FlightSimulatorPaths.BetterBravoLightsExePath), StringComparison.OrdinalIgnoreCase);
     }
 
     static class Installer
@@ -45,82 +63,165 @@ namespace BravoLights.Installation
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
         }
 
-        public static bool IsSetToRunOnStartup
+        #region Whole-machine operations (used by the /install and /uninstall command line options)
+
+        /// <summary>
+        /// Installs auto-start and the WASM module into every detected simulator.
+        /// </summary>
+        public static string Install()
         {
-            get
+            var sims = SimInstallation.Detect();
+            if (sims.Count == 0)
             {
-                try
+                throw new Exception("Could not find an installation of Microsoft Flight Simulator 2020 or 2024.");
+            }
+
+            var message = new StringBuilder();
+            var afcBridgeDisabled = false;
+            foreach (var sim in sims)
+            {
+                afcBridgeDisabled |= InstallAutoStart(sim);
+            }
+
+            if (afcBridgeDisabled)
+            {
+                message.AppendLine("Better Bravo Lights will now automatically start up with MSFS instead of the AFCBridge.");
+            }
+            else
+            {
+                message.AppendLine("Better Bravo Lights will now automatically start up with MSFS.");
+            }
+
+            message.AppendLine();
+            foreach (var sim in sims)
+            {
+                message.AppendLine($"• {sim.DisplayName}");
+            }
+
+            message.AppendLine();
+            message.AppendLine($"Better Bravo Lights will run from {FlightSimulatorPaths.BetterBravoLightsPath}");
+
+            foreach (var communityModulePath in InstallWasmModules(sims))
+            {
+                message.AppendLine();
+                message.AppendLine($"WASM module installed to {communityModulePath}");
+            }
+
+            if (OperatingSystem.IsWindows() && new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
+            {
+                message.AppendLine();
+                message.AppendLine($"(By the way, you don't need to run this installer as Administrator!)");
+            }
+
+            return message.ToString();
+        }
+
+        public static string Uninstall()
+        {
+            var sims = SimInstallation.Detect();
+            var message = new StringBuilder();
+            var anything = false;
+
+            foreach (var sim in sims)
+            {
+                if (UninstallAutoStart(sim, out var afcBridgeRestored))
                 {
-                    var xdoc = XDocument.Load(FlightSimulatorPaths.ExeXmlPath);
-                    var lightsEl = FindAddon(xdoc, BravoLightsAddonName);
-                    if (lightsEl != null)
-                    {
-                        return lightsEl.Element("Disabled")?.Value != "True";
-                    }
-                }
-                catch
-                {
-                    // If we can't even find/read the exe.xml file, it's not going to be set to run on startup
+                    anything = true;
+                    message.AppendLine(afcBridgeRestored
+                        ? $"Better Bravo Lights will no longer start up with {sim.DisplayName}. AFCBridge will now be used instead."
+                        : $"Better Bravo Lights will no longer start up with {sim.DisplayName}.");
                 }
 
-                return false;
+                if (GetInstalledWasmModuleVersion(sim) != null)
+                {
+                    UninstallWasmModule(sim);
+                    anything = true;
+                    message.AppendLine($"WASM module uninstalled from {sim.InstalledWasmModulePath}");
+                }
             }
+
+            return anything ? message.ToString() : "Better Bravo Lights was not installed.";
         }
 
         /// <summary>
-        /// Tests if the exe.xml entry contains the current recommended entries.
+        /// Installs the WASM module into each distinct Community folder (several simulators can share one).
         /// </summary>
-        public static bool InstallationNeedsUpdating
+        public static IList<string> InstallWasmModules(IEnumerable<SimInstallation> sims)
         {
-            get
+            var installed = new List<string>();
+            foreach (var sim in sims)
             {
-                try
+                var target = sim.InstalledWasmModulePath;
+                if (target == null || installed.Contains(target, StringComparer.OrdinalIgnoreCase))
                 {
-                    var xdoc = XDocument.Load(FlightSimulatorPaths.ExeXmlPath);
-                    var lightsEl = FindAddon(xdoc, BravoLightsAddonName);
-                    if (lightsEl != null)
-                    {
-                        return lightsEl.Element("ManualLoad") == null;
-                    }
+                    continue;
                 }
-                catch
-                {
-                }
-
-                return false;
+                InstallWasmModule(sim);
+                installed.Add(target);
             }
+            return installed;
         }
 
-        private static XDocument LoadExeXml()
+        #endregion
+
+        #region Per-simulator operations
+
+        public static SimInstallationStatus GetStatus(SimInstallation sim)
         {
+            string problem = null;
+            var enabled = false;
+            string path = null;
+
             try
             {
-                return XDocument.Load(FlightSimulatorPaths.ExeXmlPath);
+                var xdoc = LoadExeXml(sim);
+                var lightsEl = FindAddon(xdoc, BravoLightsAddonName);
+                if (lightsEl != null)
+                {
+                    enabled = !IsTrue(lightsEl.Element("Disabled")?.Value);
+                    path = lightsEl.Element("Path")?.Value;
+                    if (enabled && path != null && !File.Exists(path))
+                    {
+                        problem = $"Auto-start points at {path}, which no longer exists.";
+                    }
+                }
             }
-            catch (FileNotFoundException)
+            catch (CorruptExeXmlException)
             {
-                // The exe.xml file does not exist. Make one.
-                var doc = new XDocument(
-                    new XDeclaration("1.0", "windows-1252", null),
-                    new XElement("SimBase.Document",
-                        new XAttribute("Type", "SimConnect"),
-                        new XAttribute("version", "1,0"),
-                        new XElement("Descr", "Auto launch external applications on MSFS start"),
-                        new XElement("Filename", "exe.xml"),
-                        new XElement("Disabled", "False")
-                        )
-                    );
-                return doc;
+                problem = $"{Path.GetFileName(sim.ExeXmlPath)} is corrupt.";
             }
-            catch (XmlException ex)
+            catch (Exception ex)
             {
-                throw new CorruptExeXmlException(FlightSimulatorPaths.ExeXmlPath, ex);
+                problem = ex.Message;
             }
+
+            string included = null;
+            try
+            {
+                included = IncludedWasmModuleVersion;
+            }
+            catch
+            {
+            }
+
+            return new SimInstallationStatus
+            {
+                Sim = sim,
+                AutoStartEnabled = enabled,
+                AutoStartPath = path,
+                InstalledWasmVersion = GetInstalledWasmModuleVersion(sim),
+                IncludedWasmVersion = included,
+                Problem = problem
+            };
         }
 
-        public static string Install()
+        /// <summary>
+        /// Adds (or updates) the Better Bravo Lights entry in the simulator's exe.xml.
+        /// </summary>
+        /// <returns>True if the AFCBridge was disabled.</returns>
+        public static bool InstallAutoStart(SimInstallation sim)
         {
-            var xdoc = LoadExeXml();
+            var xdoc = LoadExeXml(sim);
 
             var afcBridgeEl = FindAddon(xdoc, AFCBridgeAddonName);
             if (afcBridgeEl != null)
@@ -136,96 +237,133 @@ namespace BravoLights.Installation
             }
             lightsEl.SetElementValue("Disabled", "False");
             lightsEl.SetElementValue("ManualLoad", "False");
-            lightsEl.SetElementValue("Path", Path.Join(FlightSimulatorPaths.BetterBravoLightsPath, "BetterBravoLights.exe"));
+            lightsEl.SetElementValue("Path", FlightSimulatorPaths.BetterBravoLightsExePath);
             lightsEl.SetElementValue("CommandLine", "/startedbysimulator");
             lightsEl.SetElementValue("NewConsole", "False");
 
-            xdoc.Save(FlightSimulatorPaths.ExeXmlPath);
+            SaveExeXml(sim, xdoc);
 
-            var message = new StringBuilder();
-
-            if (afcBridgeEl == null)
-            {
-                message.AppendLine("Better Bravo Lights will now automatically start up with MSFS.");
-            }
-            else
-            {
-                message.AppendLine("Better Bravo Lights will now automatically start up with MSFS instead of the AFCBridge.");
-            }
-
-            InstallWasmModule();
-
-            message.AppendLine();
-            message.AppendLine($"Better Bravo Lights will run from {FlightSimulatorPaths.BetterBravoLightsPath}");
-
-            message.AppendLine();
-            message.AppendLine($"WASM module installed to {FlightSimulatorPaths.InstalledWasmModulePath}");
-
-            if (new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
-            {
-                message.AppendLine();
-                message.AppendLine($"(By the way, you don't need to run this installer as Administrator!)");
-            }
-
-            return message.ToString();
+            return afcBridgeEl != null;
         }
 
-        public static string Uninstall()
+        /// <summary>
+        /// Removes the Better Bravo Lights entry from the simulator's exe.xml.
+        /// </summary>
+        /// <returns>True if there was an entry to remove.</returns>
+        public static bool UninstallAutoStart(SimInstallation sim, out bool afcBridgeRestored)
         {
-            if (!File.Exists(FlightSimulatorPaths.ExeXmlPath))
+            afcBridgeRestored = false;
+            if (!File.Exists(sim.ExeXmlPath))
             {
-                // The file does not exist. No need to write out a version of exe.xml with our entry removed.
-                return "Better Bravo Lights was not installed.";
+                return false;
             }
 
-            var xdoc = LoadExeXml();
+            var xdoc = LoadExeXml(sim);
+
+            var lightsEl = FindAddon(xdoc, BravoLightsAddonName);
+            if (lightsEl == null)
+            {
+                return false;
+            }
+            lightsEl.Remove();
 
             var afcBridgeEl = FindAddon(xdoc, AFCBridgeAddonName);
             if (afcBridgeEl != null)
             {
                 afcBridgeEl.SetElementValue("Disabled", "False");
+                afcBridgeRestored = true;
             }
 
-            var lightsEl = FindAddon(xdoc, BravoLightsAddonName);
-            if (lightsEl != null)
+            SaveExeXml(sim, xdoc);
+            return true;
+        }
+
+        public static void InstallWasmModule(SimInstallation sim)
+        {
+            var target = sim.InstalledWasmModulePath ?? throw new Exception($"Cannot locate the Community folder for {sim.DisplayName}.");
+            if (!Directory.Exists(FlightSimulatorPaths.IncludedWasmModulePath))
             {
-                lightsEl.Remove();
+                throw new Exception("The WASM module is missing from this copy of Better Bravo Lights.");
             }
+            UninstallWasmModule(sim);
+            FileUtils.CopyDirectory(FlightSimulatorPaths.IncludedWasmModulePath, target);
+        }
 
-            xdoc.Save(FlightSimulatorPaths.ExeXmlPath);
-
-            var message = new StringBuilder();
-
-            if (afcBridgeEl == null)
+        public static void UninstallWasmModule(SimInstallation sim)
+        {
+            var target = sim.InstalledWasmModulePath;
+            if (target != null)
             {
-                message.AppendLine("Better Bravo Lights will no longer start up with MSFS.");
+                FileUtils.RemoveDirectoryRecursively(target);
             }
-            else
+        }
+
+        public static string GetInstalledWasmModuleVersion(SimInstallation sim)
+        {
+            var path = sim.InstalledWasmModulePath;
+            return path == null ? null : GetWasmModuleVersion(path);
+        }
+
+        #endregion
+
+        private static bool IsTrue(string value) => string.Equals(value?.Trim(), "True", StringComparison.OrdinalIgnoreCase);
+
+        private static XDocument LoadExeXml(SimInstallation sim)
+        {
+            var path = sim.ExeXmlPath;
+            try
             {
-                message.AppendLine("Better Bravo Lights will no longer start up with MSFS. AFCBridge will now be used instead.");
+                return XDocument.Load(path);
+            }
+            catch (Exception ex) when (ex is FileNotFoundException || ex is DirectoryNotFoundException)
+            {
+                // The exe.xml file does not exist. Make one.
+                var doc = new XDocument(
+                    new XDeclaration("1.0", "windows-1252", null),
+                    new XElement("SimBase.Document",
+                        new XAttribute("Type", sim.Version == SimVersion.MSFS2024 ? "Launch" : "SimConnect"),
+                        new XAttribute("version", "1,0"),
+                        new XElement("Descr", "Auto launch external applications on MSFS start"),
+                        new XElement("Filename", Path.GetFileName(path)),
+                        new XElement("Disabled", "False")
+                        )
+                    );
+                return doc;
+            }
+            catch (XmlException ex)
+            {
+                throw new CorruptExeXmlException(path, ex);
+            }
+        }
+
+        private static void SaveExeXml(SimInstallation sim, XDocument xdoc)
+        {
+            var path = sim.ExeXmlPath;
+            Directory.CreateDirectory(Path.GetDirectoryName(path));
+
+            // Keep a backup of the previous version, in case anything goes wrong
+            if (File.Exists(path))
+            {
+                File.Copy(path, path + ".bbl-backup", true);
             }
 
-            if (InstalledWasmModuleVersion != null)
-            {
-                UninstallWasmModule();
-                message.AppendLine();
-                message.AppendLine($"WASM module uninstalled from {FlightSimulatorPaths.InstalledWasmModulePath}");
-            }
-
-            return message.ToString();
+            xdoc.Save(path);
         }
 
         private static XElement FindAddon(XDocument document, string name)
         {
-            foreach (var addonEl in document.Element("SimBase.Document").Elements("Launch.Addon"))
+            var root = document.Element("SimBase.Document");
+            if (root == null)
+            {
+                return null;
+            }
+
+            foreach (var addonEl in root.Elements("Launch.Addon"))
             {
                 var addonNameElement = addonEl.Element("Name");
-                if (addonNameElement != null)
+                if (addonNameElement != null && addonNameElement.Value == name)
                 {
-                    if (addonNameElement.Value == name)
-                    {
-                        return addonEl;
-                    }
+                    return addonEl;
                 }
             }
             return null;
@@ -240,16 +378,15 @@ namespace BravoLights.Installation
                 return null;
             }
 
-            var text = File.ReadAllText(manifestPath);
-            var doc = JsonDocument.Parse(text);
-            return doc.RootElement.GetProperty("package_version").GetString();
-        }
-
-        public static string InstalledWasmModuleVersion
-        {
-            get
+            try
             {
-                return GetWasmModuleVersion(FlightSimulatorPaths.InstalledWasmModulePath);
+                var text = File.ReadAllText(manifestPath);
+                using var doc = JsonDocument.Parse(text);
+                return doc.RootElement.GetProperty("package_version").GetString();
+            }
+            catch
+            {
+                return "unknown";
             }
         }
 
@@ -266,36 +403,10 @@ namespace BravoLights.Installation
             }
         }
 
-        public static void InstallWasmModule()
-        {
-            UninstallWasmModule();
-            FileUtils.CopyDirectory(FlightSimulatorPaths.IncludedWasmModulePath, FlightSimulatorPaths.InstalledWasmModulePath);
-        }
-
-        public static void UninstallWasmModule()
-        {
-            FileUtils.RemoveDirectoryRecursively(FlightSimulatorPaths.InstalledWasmModulePath);
-        }
-
         /// <summary>
-        /// Tests whether MSFS's exe.xml file contains some entry for BBL. Doesn't test
-        /// whether it's enabled or disabled.
+        /// Gets a value indicating whether any simulator is set to start BBL automatically.
         /// </summary>
-        public static bool IsBBLMentionedInExeXml
-        {
-            get
-            {
-                try
-                {
-                    var exeXmlContents = File.ReadAllText(FlightSimulatorPaths.ExeXmlPath);
-                    return exeXmlContents.Contains("BetterBravoLights.exe");
-                }
-                catch (Exception)
-                {
-                    return false;
-                }
-            }
-        }
+        public static bool IsSetToRunOnStartup => SimInstallation.Detect().Any(s => GetStatus(s).AutoStartEnabled);
 
         /// <summary>
         /// Gets a value indicating whether there's a problem with the installation configuration; this should
@@ -305,42 +416,46 @@ namespace BravoLights.Installation
         {
             get
             {
-                try
+                foreach (var sim in SimInstallation.Detect())
                 {
-                    var xdoc = LoadExeXml();
-                    var lightsEl = FindAddon(xdoc, BravoLightsAddonName);
-                    if (lightsEl != null)
+                    try
                     {
-                        var disabledElem = lightsEl.Element("Disabled");
-                        if (disabledElem != null && disabledElem.Value == "True")
+                        var xdoc = LoadExeXml(sim);
+                        var lightsEl = FindAddon(xdoc, BravoLightsAddonName);
+                        if (lightsEl == null || IsTrue(lightsEl.Element("Disabled")?.Value))
                         {
-                            // It's installed but disabled. Don't bother checking the file path
-                            return null;
+                            // Not installed, or installed but disabled. Don't bother checking the file path
+                            continue;
                         }
-                        var pathElem = lightsEl.Element("Path");
-                        if (pathElem != null)
+                        var installedBblPath = lightsEl.Element("Path")?.Value;
+                        if (installedBblPath != null && !File.Exists(installedBblPath))
                         {
-                            var installedBblPath = pathElem.Value;
-                            if (!File.Exists(installedBblPath))
-                            {
-                                return $"BetterBravoLights was installed into Flight Simulator at the path\n{installedBblPath}\nbut that file no longer exists.\n\nAs a result, BetterBravoLights will not currently run automatically when MSFS starts.\n\nTo fix this, restore the original path or re-run the BBL installer from the new path.";
-                            }
+                            return $"BetterBravoLights was installed into {sim.DisplayName} at the path\n{installedBblPath}\nbut that file no longer exists.\n\nAs a result, BetterBravoLights will not currently run automatically when MSFS starts.\n\nTo fix this, open Settings in this copy of Better Bravo Lights and install it again.";
                         }
                     }
-                }
-                catch (CorruptExeXmlException)
-                {
-                    // Right now, the exe.xml file is corrupted. If we haven't been installed, that's okay.
-                    if (IsBBLMentionedInExeXml)
+                    catch (CorruptExeXmlException)
                     {
-                        // We're in a situation where we HAVE been installed previously but now the exe.xml file is
-                        // corrupt. Presumably we've been started up manually because the user is trying to get
-                        // BBL working.
-                        return "After BetterBravoLights was installed, some other installation has broken the file that controls the programs that Flight Simulator launches when it starts.\n\nAs a result, BetterBravoLights (and some other programs) will not currently run automatically when MSFS starts.\n\nRun the BetterBravoLights installer and it will either automatically fix the problem or help you get it fixed.";
+                        // Right now, the exe.xml file is corrupted. If we haven't been installed, that's okay.
+                        if (IsBBLMentionedInExeXml(sim))
+                        {
+                            return $"After BetterBravoLights was installed, some other installation has broken the file that controls the programs that {sim.DisplayName} launches when it starts.\n\nAs a result, BetterBravoLights (and some other programs) will not currently run automatically when MSFS starts.\n\nRun the BetterBravoLights installer and it will either automatically fix the problem or help you get it fixed.";
+                        }
                     }
                 }
 
                 return null;
+            }
+        }
+
+        private static bool IsBBLMentionedInExeXml(SimInstallation sim)
+        {
+            try
+            {
+                return File.ReadAllText(sim.ExeXmlPath).Contains("BetterBravoLights.exe");
+            }
+            catch (Exception)
+            {
+                return false;
             }
         }
     }

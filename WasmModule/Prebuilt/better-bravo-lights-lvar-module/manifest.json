@@ -1,0 +1,15 @@
+{
+  "dependencies": [],
+  "content_type": "MISC",
+  "title": "Better Bravo Lights LVars Module",
+  "manufacturer": "",
+  "creator": "Royston Shufflebotham",
+  "package_version": "0.6.0",
+  "minimum_game_version": "1.25.9",
+  "release_notes": {
+    "neutral": {
+      "LastUpdate": "",
+      "OlderHistory": ""
+    }
+  }
+}

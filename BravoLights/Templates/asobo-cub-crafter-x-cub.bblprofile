@@ -1,0 +1,28 @@
+{
+  "format": "BetterBravoLights.Profile",
+  "version": 1,
+  "id": "asobo-cub-crafter-x-cub",
+  "name": "Asobo Cub Crafter X Cub",
+  "enabled": true,
+  "aircraft": [
+    "Asobo_XCub",
+    "Asobo_XCub_Floats",
+    "Asobo_XCub_Skis",
+    "Asobo_NXCub"
+  ],
+  "inheritDefault": true,
+  "lights": {
+    "LowOilPressure": {
+      "expression": "A:GENERAL ENG OIL PRESSURE:1, psi < 55",
+      "note": "From panel\\panel.xml: oil pressure is green between 55 and 95 psi."
+    },
+    "LowVolts": {
+      "expression": "A:ELECTRICAL MAIN BUS VOLTAGE:3, volts <= 25.5",
+      "note": "From panel\\panel.xml"
+    },
+    "LowFuelPressure": {
+      "expression": "A:GENERAL ENG FUEL PRESSURE:1, psi < 3",
+      "note": "Typical pressure is 7.999psi with fuel pump on and idle throttle, 3.1psi without pump"
+    }
+  }
+}

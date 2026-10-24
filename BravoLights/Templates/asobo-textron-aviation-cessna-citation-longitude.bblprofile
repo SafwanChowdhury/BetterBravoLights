@@ -1,0 +1,17 @@
+{
+  "format": "BetterBravoLights.Profile",
+  "version": 1,
+  "id": "asobo-textron-aviation-cessna-citation-longitude",
+  "name": "Asobo Textron Aviation Cessna Citation Longitude",
+  "enabled": true,
+  "aircraft": [
+    "Asobo_Longitude"
+  ],
+  "inheritDefault": true,
+  "lights": {
+    "LowVolts": {
+      "expression": "A:ELECTRICAL MAIN BUS VOLTAGE:1, volts <= 24.5",
+      "note": "Files are encrypted; 24V based"
+    }
+  }
+}

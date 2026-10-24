@@ -1,0 +1,24 @@
+{
+  "format": "BetterBravoLights.Profile",
+  "version": 1,
+  "id": "asobo-diamond-da40-tdi",
+  "name": "Asobo Diamond Aircraft DA40 TDI",
+  "enabled": true,
+  "aircraft": [
+    "Asobo_DA40_TDI"
+  ],
+  "inheritDefault": true,
+  "lights": {
+    "MasterCaution": {
+      "expression": "L:XMLVAR_CautionEnabled == 1"
+    },
+    "LowOilPressure": {
+      "expression": "A:GENERAL ENG OIL PRESSURE:1, bar <= 2.3",
+      "note": "Files are encrypted; on-screen panel shows yellow from 2.3 bar and below"
+    },
+    "LowVolts": {
+      "expression": "A:ELECTRICAL MAIN BUS VOLTAGE:3, volts < 14",
+      "note": "Typical voltage with engine running is 14.5V"
+    }
+  }
+}

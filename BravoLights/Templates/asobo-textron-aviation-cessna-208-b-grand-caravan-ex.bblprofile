@@ -1,0 +1,25 @@
+{
+  "format": "BetterBravoLights.Profile",
+  "version": 1,
+  "id": "asobo-textron-aviation-cessna-208-b-grand-caravan-ex",
+  "name": "Asobo Textron Aviation Cessna 208 B Grand Caravan EX",
+  "enabled": true,
+  "aircraft": [
+    "Asobo_208B_GRAND_CARAVAN_EX"
+  ],
+  "inheritDefault": true,
+  "lights": {
+    "LowOilPressure": {
+      "expression": "A:GENERAL ENG OIL PRESSURE:1, psi < 85",
+      "note": "From Gauge definitions in panel\\Panel.xml"
+    },
+    "LowVolts": {
+      "expression": "A:ELECTRICAL MAIN BUS VOLTAGE:1, volts <= 25.5",
+      "note": "From panel\\Panel.xml"
+    },
+    "Vacuum": {
+      "expression": "A:SUCTION PRESSURE, inch of mercury < 3.5",
+      "note": "From panel\\Panel.xml"
+    }
+  }
+}

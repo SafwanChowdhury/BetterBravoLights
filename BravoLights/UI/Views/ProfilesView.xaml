@@ -1,0 +1,319 @@
+<UserControl x:Class="BravoLights.UI.Views.ProfilesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:BravoLights.UI.ViewModels"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=vm:ProfilesViewModel}"
+             d:DesignWidth="980" d:DesignHeight="800">
+    <UserControl.Resources>
+        <Style x:Key="SectionCard" TargetType="Border" BasedOn="{StaticResource Card}">
+            <Setter Property="Margin" Value="0,0,0,14" />
+        </Style>
+        <Style x:Key="Placeholder" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextFaintBrush}" />
+            <Setter Property="IsHitTestVisible" Value="False" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+            <Setter Property="Margin" Value="10,7,10,0" />
+            <Setter Property="VerticalAlignment" Value="Top" />
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="300" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- ===== Profile library ===== -->
+        <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,1,0">
+            <DockPanel Margin="18,24,14,14">
+                <StackPanel DockPanel.Dock="Top">
+                    <TextBlock Text="Aircraft profiles" Style="{StaticResource H1}" />
+                    <TextBlock Text="Each profile maps aircraft to light expressions." Style="{StaticResource Dim}" Margin="0,4,0,14" />
+
+                    <WrapPanel Margin="0,0,0,10">
+                        <Button x:Name="NewButton" Style="{StaticResource PrimaryButton}" Click="NewButton_Click" Margin="0,0,6,6">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" Margin="0,2,6,0" />
+                                <TextBlock Text="New ▾" />
+                            </StackPanel>
+                            <Button.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Blank profile" Command="{Binding NewBlankCommand}" />
+                                    <MenuItem Header="For the loaded aircraft" Command="{Binding NewForAircraftCommand}" />
+                                    <MenuItem Header="From a template…" Command="{Binding NewFromTemplateCommand}" />
+                                </ContextMenu>
+                            </Button.ContextMenu>
+                        </Button>
+                        <Button Content="Import…" Command="{Binding ImportCommand}" Margin="0,0,6,6"
+                                ToolTip="Import .bblprofile / .bblpack files, or an old Better Bravo Lights Config.ini" />
+                        <Button Content="Export all…" Command="{Binding ExportAllCommand}" Margin="0,0,6,6"
+                                ToolTip="Save every profile into a single .bblpack file" />
+                    </WrapPanel>
+
+                    <Grid Margin="0,0,0,10">
+                        <TextBox x:Name="SearchBox" Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBlock Text="Search profiles or aircraft…" Style="{StaticResource Placeholder}" Margin="10,0,0,0" VerticalAlignment="Center"
+                                   Visibility="{Binding Text, ElementName=SearchBox, Converter={StaticResource InvNullToVis}}" />
+                    </Grid>
+                </StackPanel>
+
+                <ListBox ItemsSource="{Binding ItemsView}" SelectedItem="{Binding SelectedItem}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel>
+                                <DockPanel>
+                                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                        <Border Style="{StaticResource Badge}" Background="{StaticResource SuccessSoftBrush}" Margin="4,0,0,0"
+                                                Visibility="{Binding IsActive, Converter={StaticResource BoolToVis}}">
+                                            <TextBlock Text="ACTIVE" FontSize="9.5" FontWeight="Bold" Foreground="{StaticResource SuccessBrush}" />
+                                        </Border>
+                                        <Border Style="{StaticResource Badge}" Background="{StaticResource WarningSoftBrush}" Margin="4,0,0,0"
+                                                Visibility="{Binding IsDefault, Converter={StaticResource BoolToVis}}">
+                                            <TextBlock Text="DEFAULT" FontSize="9.5" FontWeight="Bold" Foreground="{StaticResource WarningBrush}" />
+                                        </Border>
+                                        <Border Style="{StaticResource Badge}" Margin="4,0,0,0"
+                                                Visibility="{Binding IsDisabled, Converter={StaticResource BoolToVis}}">
+                                            <TextBlock Text="OFF" FontSize="9.5" FontWeight="Bold" Foreground="{StaticResource TextDimBrush}" />
+                                        </Border>
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                </DockPanel>
+                                <TextBlock Text="{Binding Summary}" Foreground="{StaticResource TextDimBrush}" FontSize="11.5" TextTrimming="CharacterEllipsis" Margin="0,2,0,0" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+        </Border>
+
+        <!-- ===== Editor ===== -->
+        <Grid Grid.Column="1">
+            <TextBlock Text="Select a profile to edit it, or create a new one." Style="{StaticResource Dim}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                       Visibility="{Binding Editor, Converter={StaticResource InvNullToVis}}" />
+
+            <DockPanel DataContext="{Binding Editor}" Visibility="{Binding Converter={StaticResource NullToVis}}">
+                <!-- Header bar -->
+                <Border DockPanel.Dock="Top" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Padding="24,16">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="Unsaved changes" Foreground="{StaticResource WarningBrush}" VerticalAlignment="Center" Margin="0,0,12,0"
+                                       Visibility="{Binding IsDirty, Converter={StaticResource BoolToVis}}" />
+                            <Button Content="Revert" Command="{Binding RevertCommand}" Margin="0,0,6,0" />
+                            <Button Content="Save" Style="{StaticResource PrimaryButton}" Command="{Binding SaveCommand}" MinWidth="80" />
+                        </StackPanel>
+                        <Grid>
+                            <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" FontSize="18" FontWeight="SemiBold" Background="Transparent"
+                                     BorderThickness="0" Padding="2,2" Margin="0,0,16,0" />
+                        </Grid>
+                    </DockPanel>
+                </Border>
+
+                <ScrollViewer x:Name="EditorScroll" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="24,18,24,24">
+
+                        <!-- Actions -->
+                        <WrapPanel Margin="0,0,0,14">
+                            <Button Style="{StaticResource SmallButton}" Content="Use for now" Command="{Binding UseNowCommand}" Margin="0,0,6,0"
+                                    ToolTip="Use this profile regardless of the loaded aircraft (choose 'Automatic' on the dashboard to undo)" />
+                            <Button Style="{StaticResource SmallButton}" Content="Duplicate" Command="{Binding DataContext.DuplicateCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" Margin="0,0,6,0" />
+                            <Button Style="{StaticResource SmallButton}" Content="Export…" Command="{Binding DataContext.ExportCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" Margin="0,0,6,0" />
+                            <Button Style="{StaticResource SmallButton}" Content="Delete" Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    Foreground="{StaticResource DangerBrush}" Visibility="{Binding IsDefault, Converter={StaticResource InvBoolToVis}}" />
+                        </WrapPanel>
+
+                        <!-- Aircraft matching -->
+                        <Border Style="{StaticResource SectionCard}" Visibility="{Binding IsDefault, Converter={StaticResource InvBoolToVis}}">
+                            <StackPanel>
+                                <DockPanel Margin="0,0,0,6">
+                                    <CheckBox DockPanel.Dock="Right" Content="Enabled" IsChecked="{Binding Enabled}"
+                                              ToolTip="Disabled profiles are never chosen automatically" />
+                                    <TextBlock Text="Aircraft" Style="{StaticResource H2}" />
+                                </DockPanel>
+                                <TextBlock Style="{StaticResource Dim}" Margin="0,0,0,10">
+                                    Patterns are matched against the aircraft's folder (e.g. <Run FontFamily="{StaticResource MonoFont}">FNX_32X</Run>), its path and its title.
+                                    Use <Run FontFamily="{StaticResource MonoFont}">*</Run> as a wildcard, e.g. <Run FontFamily="{StaticResource MonoFont}">PMDG 737-*</Run>. The most specific match wins.
+                                </TextBlock>
+
+                                <Border CornerRadius="6" Padding="10,7" Margin="0,0,0,10" Visibility="{Binding MatchStatus, Converter={StaticResource NullToVis}}">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background" Value="{StaticResource Surface2Brush}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding MatchesCurrentAircraft}" Value="True">
+                                                    <Setter Property="Background" Value="{StaticResource SuccessSoftBrush}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <TextBlock Text="{Binding MatchStatus}" TextWrapping="Wrap" />
+                                </Border>
+
+                                <ItemsControl ItemsSource="{Binding Patterns}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <DockPanel Margin="0,0,0,6">
+                                                <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Command="{Binding RemoveCommand}" ToolTip="Remove pattern" Margin="4,0,0,0">
+                                                    <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" />
+                                                </Button>
+                                                <TextBlock DockPanel.Dock="Right" Text="&#xE73E;" FontFamily="Segoe MDL2 Assets" Foreground="{StaticResource SuccessBrush}"
+                                                           VerticalAlignment="Center" Margin="8,0,0,0" ToolTip="Matches the loaded aircraft"
+                                                           Visibility="{Binding MatchesCurrentAircraft, Converter={StaticResource BoolToVis}}" />
+                                                <TextBox Text="{Binding Pattern, UpdateSourceTrigger=PropertyChanged}" FontFamily="{StaticResource MonoFont}" FontSize="12.5" />
+                                            </DockPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <DockPanel Margin="0,4,0,0">
+                                    <Button DockPanel.Dock="Right" Content="Add" Command="{Binding AddPatternCommand}" Margin="6,0,0,0" />
+                                    <Grid>
+                                        <TextBox x:Name="NewPatternBox" Text="{Binding NewPattern, UpdateSourceTrigger=PropertyChanged}" FontFamily="{StaticResource MonoFont}" FontSize="12.5"
+                                                 KeyDown="NewPatternBox_KeyDown" />
+                                        <TextBlock Text="Add a pattern, e.g. PMDG 777-*" Style="{StaticResource Placeholder}" VerticalAlignment="Center" Margin="10,0,0,0"
+                                                   Visibility="{Binding Text, ElementName=NewPatternBox, Converter={StaticResource InvNullToVis}}" />
+                                    </Grid>
+                                </DockPanel>
+                                <Button HorizontalAlignment="Left" Style="{StaticResource SmallButton}" Margin="0,8,0,0" Command="{Binding AddCurrentAircraftCommand}"
+                                        Visibility="{Binding CurrentAircraftFolder, Converter={StaticResource NullToVis}}">
+                                    <TextBlock>
+                                        <Run Text="Add loaded aircraft" />
+                                        <Run Text="{Binding CurrentAircraftFolder, Mode=OneWay, StringFormat=' ({0})'}" FontFamily="{StaticResource MonoFont}" />
+                                    </TextBlock>
+                                </Button>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource SectionCard}" Visibility="{Binding IsDefault, Converter={StaticResource BoolToVis}}">
+                            <StackPanel>
+                                <TextBlock Text="Default profile" Style="{StaticResource H2}" Margin="0,0,0,6" />
+                                <TextBlock Text="{Binding MatchStatus}" Style="{StaticResource Dim}" />
+                                <TextBlock Style="{StaticResource Dim}" Margin="0,6,0,0"
+                                           Text="Aircraft profiles that inherit from the default use these expressions for any light they leave empty." />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Behaviour -->
+                        <Border Style="{StaticResource SectionCard}">
+                            <StackPanel>
+                                <TextBlock Text="Behaviour" Style="{StaticResource H2}" Margin="0,0,0,10" />
+                                <CheckBox Content="Inherit empty lights from the default profile" IsChecked="{Binding InheritsDefault}" Margin="0,0,0,12"
+                                          Visibility="{Binding IsDefault, Converter={StaticResource InvBoolToVis}}" />
+
+                                <TextBlock Text="MASTER ENABLE" Style="{StaticResource Label}" />
+                                <TextBlock Text="Every light stays off unless this is true, e.g. while the battery is off. Leave empty to inherit / always enable." Style="{StaticResource Dim}" Margin="0,0,0,6" />
+                                <DockPanel>
+                                    <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Margin="4,0,0,0" VerticalAlignment="Top" ToolTip="Insert a variable"
+                                            Tag="{Binding ElementName=MasterBox}" Click="PickVariable_Click">
+                                        <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="14" />
+                                    </Button>
+                                    <Grid>
+                                        <TextBox x:Name="MasterBox" Style="{StaticResource ExpressionBox}" Text="{Binding MasterEnable, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBlock Text="{Binding MasterEnablePlaceholder}" Style="{StaticResource Placeholder}" FontFamily="{StaticResource MonoFont}" FontSize="12"
+                                                   Visibility="{Binding Text, ElementName=MasterBox, Converter={StaticResource InvNullToVis}}" />
+                                    </Grid>
+                                </DockPanel>
+                                <TextBlock Text="{Binding MasterEnableError}" Foreground="{StaticResource DangerBrush}" TextWrapping="Wrap" Margin="0,4,0,0"
+                                           Visibility="{Binding MasterEnableError, Converter={StaticResource NullToVis}}" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Lights -->
+                        <Border Style="{StaticResource SectionCard}">
+                            <StackPanel>
+                                <DockPanel Margin="0,0,0,6">
+                                    <TextBlock DockPanel.Dock="Right" VerticalAlignment="Center" Foreground="{StaticResource DangerBrush}"
+                                               Visibility="{Binding ErrorCount, Converter={StaticResource NonZeroToVis}}"
+                                               Text="{Binding ErrorCount, StringFormat='{}{0} expression(s) with errors'}" />
+                                    <TextBlock Text="Lights" Style="{StaticResource H2}" />
+                                </DockPanel>
+                                <TextBlock Style="{StaticResource Dim}" Margin="0,0,0,4">
+                                    Each light is lit when its expression is true. Use <Run FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource TextBrush}">L:NAME</Run> for local variables and
+                                    <Run FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource TextBrush}">A:NAME, units</Run> for simulation variables, combined with
+                                    <Run FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource TextBrush}">== != &lt; &gt; AND OR NOT ( )</Run>.
+                                    <Run FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource TextBrush}">ON</Run> and
+                                    <Run FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource TextBrush}">OFF</Run> force a light. Leave a light empty to inherit it.
+                                </TextBlock>
+                                <TextBlock Style="{StaticResource Dim}" Margin="0,0,0,8" Visibility="{Binding IsActive, Converter={StaticResource BoolToVis}}"
+                                           Text="This profile is active: the coloured dots show each light's live state." />
+
+                                <ItemsControl ItemsSource="{Binding LightsView}" Focusable="False">
+                                    <ItemsControl.GroupStyle>
+                                        <GroupStyle>
+                                            <GroupStyle.HeaderTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Name}" Style="{StaticResource Label}" Margin="0,16,0,8" />
+                                                </DataTemplate>
+                                            </GroupStyle.HeaderTemplate>
+                                        </GroupStyle>
+                                    </ItemsControl.GroupStyle>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Margin="0,0,0,12">
+                                                <DockPanel Margin="0,0,0,4">
+                                                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                                        <Button Style="{StaticResource GhostButton}" ToolTip="Insert a variable" Tag="{Binding ElementName=expr}" Click="PickVariable_Click">
+                                                            <StackPanel Orientation="Horizontal">
+                                                                <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="12" Margin="0,2,5,0" />
+                                                                <TextBlock Text="Variable" FontSize="12" />
+                                                            </StackPanel>
+                                                        </Button>
+                                                        <ToggleButton IsChecked="{Binding Invert}" Padding="7,2" Margin="4,0" FontSize="11" FontWeight="SemiBold"
+                                                                      ToolTip="Invert: light is lit when the expression is FALSE" Content="NOT" />
+                                                        <ToggleButton IsChecked="{Binding ShowNote}" Padding="7,2" ToolTip="Add a note">
+                                                            <TextBlock Text="&#xE70B;" FontFamily="Segoe MDL2 Assets" FontSize="11" Margin="0,2,0,0" />
+                                                        </ToggleButton>
+                                                    </StackPanel>
+                                                    <Ellipse Width="10" Height="10" VerticalAlignment="Center" Margin="0,0,8,0">
+                                                        <Ellipse.Fill>
+                                                            <MultiBinding Converter="{StaticResource LightBrush}">
+                                                                <Binding Path="Colour" />
+                                                                <Binding Path="IsLit" />
+                                                            </MultiBinding>
+                                                        </Ellipse.Fill>
+                                                    </Ellipse>
+                                                    <TextBlock Text="{Binding Label}" FontWeight="SemiBold" FontSize="12.5" VerticalAlignment="Center" />
+                                                    <Border Style="{StaticResource Badge}" Margin="8,0,0,0" Padding="6,1" HorizontalAlignment="Left"
+                                                            Visibility="{Binding StatusText, Converter={StaticResource NullToVis}}">
+                                                        <TextBlock Text="{Binding StatusText}" FontSize="10" Foreground="{StaticResource TextDimBrush}" />
+                                                    </Border>
+                                                </DockPanel>
+                                                <Grid>
+                                                    <TextBox x:Name="expr" Style="{StaticResource ExpressionBox}" Tag="{Binding Name}"
+                                                             Text="{Binding Expression, UpdateSourceTrigger=PropertyChanged}" />
+                                                    <TextBlock Text="{Binding Placeholder}" Style="{StaticResource Placeholder}" FontFamily="{StaticResource MonoFont}" FontSize="12"
+                                                               Visibility="{Binding Text, ElementName=expr, Converter={StaticResource InvNullToVis}}" />
+                                                </Grid>
+                                                <TextBlock Text="{Binding Error}" Foreground="{StaticResource DangerBrush}" TextWrapping="Wrap" FontSize="12" Margin="2,4,0,0"
+                                                           Visibility="{Binding Error, Converter={StaticResource NullToVis}}" />
+                                                <Grid Margin="0,6,0,0" Visibility="{Binding ShowNote, Converter={StaticResource BoolToVis}}">
+                                                    <TextBox x:Name="note" Text="{Binding Note, UpdateSourceTrigger=PropertyChanged}" FontSize="12" TextWrapping="Wrap" AcceptsReturn="True" />
+                                                    <TextBlock Text="Note, e.g. where this LVar came from" Style="{StaticResource Placeholder}" FontSize="12"
+                                                               Visibility="{Binding Text, ElementName=note, Converter={StaticResource InvNullToVis}}" />
+                                                </Grid>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Details -->
+                        <Border Style="{StaticResource SectionCard}">
+                            <StackPanel>
+                                <TextBlock Text="About this profile" Style="{StaticResource H2}" Margin="0,0,0,10" />
+                                <TextBlock Text="AUTHOR" Style="{StaticResource Label}" />
+                                <TextBox Text="{Binding Author, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,10" />
+                                <TextBlock Text="DESCRIPTION" Style="{StaticResource Label}" />
+                                <TextBox Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" TextWrapping="Wrap" AcceptsReturn="True" MinHeight="60"
+                                         VerticalContentAlignment="Top" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </DockPanel>
+        </Grid>
+    </Grid>
+</UserControl>

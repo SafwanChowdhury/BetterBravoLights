@@ -1,0 +1,58 @@
+{
+  "format": "BetterBravoLights.Profile",
+  "version": 1,
+  "id": "justflight-hawk-t1",
+  "name": "JustFlight Hawk T1",
+  "enabled": true,
+  "aircraft": [
+    "JF_Hawk_T1"
+  ],
+  "inheritDefault": true,
+  "lights": {
+    "GearLGreen": {
+      "expression": "L:FWD_LEFT_Gear_L_green == 1",
+      "note": "Our approach for this plane is simply to reflect the CWP indicators That way, we don't need to care about what pressure is 'low' for hydraulics or oil, plus our indicators will light when you do an indicators test"
+    },
+    "GearLRed": {
+      "expression": "L:FWD_LEFT_Gear_L_red == 1"
+    },
+    "GearCGreen": {
+      "expression": "L:FWD_LEFT_Gear_C_green == 1"
+    },
+    "GearCRed": {
+      "expression": "L:FWD_LEFT_Gear_C_red == 1"
+    },
+    "GearRGreen": {
+      "expression": "L:FWD_LEFT_Gear_R_green == 1"
+    },
+    "GearRRed": {
+      "expression": "L:FWD_LEFT_Gear_R_red == 1"
+    },
+    "MasterWarning": {
+      "expression": "L:FWD_MAIN_CWS_L == 1 OR L:FWD_MAIN_CWS_R == 1"
+    },
+    "EngineFire": {
+      "expression": "L:FWD_MAIN_CWP_Fire == 1"
+    },
+    "LowOilPressure": {
+      "expression": "L:FWD_MAIN_CWP_Oil == 1"
+    },
+    "LowFuelPressure": {
+      "expression": "L:FWD_MAIN_CWP_FPR == 1"
+    },
+    "StarterEngaged": {
+      "expression": "L:GTS_IsRunning == 1",
+      "note": "GTS_start is set as GTS is booting up FWD_GTS_ind is the green 'ready' indicator GTS_IsRunning is true for both states"
+    },
+    "LowHydPressure": {
+      "expression": "L:FWD_MAIN_CWP_Hyd == 1 OR L:FWD_MAIN_CWP_Hyd1 == 1 OR L:FWD_MAIN_CWP_Hyd2 == 1"
+    },
+    "AuxFuelPump": {
+      "expression": "L:FWD_LEFT_FuelPump == 0",
+      "note": "We basically always want the fuel pump on, so complain if it isn't (This will largely duplicate the LowFuelPressure light, of course)"
+    },
+    "LowVolts": {
+      "expression": "L:FWD_MAIN_CWP_Gen == 1"
+    }
+  }
+}

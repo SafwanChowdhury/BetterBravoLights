@@ -1,0 +1,21 @@
+{
+  "format": "BetterBravoLights.Profile",
+  "version": 1,
+  "id": "asobo-diamond-aircraft-dv20",
+  "name": "Asobo Diamond Aircraft DV20",
+  "enabled": true,
+  "aircraft": [
+    "Asobo_DV20"
+  ],
+  "inheritDefault": true,
+  "lights": {
+    "LowOilPressure": {
+      "expression": "A:GENERAL ENG OIL PRESSURE:1, psi <= 30",
+      "note": "Files are encrypted; panel shows green from 30psi - 70psi"
+    },
+    "LowFuelPressure": {
+      "expression": "A:GENERAL ENG FUEL PRESSURE:1, psi < 1.5",
+      "note": "Files are encrypted; value discovered via trial-and-error comparing with the on-dashboard fuel-pressure light"
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "format": "BetterBravoLights.Profile",
+  "version": 1,
+  "id": "asobo-textron-aviation-beechcraft-king-air-350i",
+  "name": "Asobo Textron Aviation Beechcraft King Air 350i",
+  "enabled": true,
+  "aircraft": [
+    "Asobo_KingAir350"
+  ],
+  "inheritDefault": true,
+  "lights": {
+    "LowOilPressure": {
+      "expression": "A:ENG OIL PRESSURE:1, psi <= 105 OR A:ENG OIL PRESSURE:2, psi <= 105",
+      "note": "From panel\\panel.xml [although the panel is incorrectly only configured to monitor PRESSURE:1]"
+    },
+    "LowFuelPressure": {
+      "expression": "A:GENERAL ENG FUEL PRESSURE:1, psi <= 10 OR A:GENERAL ENG FUEL PRESSURE:2, psi <= 10",
+      "note": "From panel\\panel.xml"
+    }
+  }
+}

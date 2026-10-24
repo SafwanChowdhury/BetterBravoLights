@@ -1,0 +1,17 @@
+{
+  "format": "BetterBravoLights.Profile",
+  "version": 1,
+  "id": "asobo-cirrus-sr22",
+  "name": "Asobo Cirrus SR22",
+  "enabled": true,
+  "aircraft": [
+    "Asobo_SR22"
+  ],
+  "inheritDefault": true,
+  "lights": {
+    "LowOilPressure": {
+      "expression": "A:GENERAL ENG OIL PRESSURE:1, psi < 30",
+      "note": "Files are encrypted; G1000 panel shows green from 30psi - 70psi"
+    }
+  }
+}

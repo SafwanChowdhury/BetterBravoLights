@@ -1,0 +1,26 @@
+{
+  "format": "BetterBravoLights.Profile",
+  "version": 1,
+  "id": "asobo-aviat-pitts-special-s2s",
+  "name": "Asobo Aviat Pitts Special S2S",
+  "enabled": true,
+  "aircraft": [
+    "Asobo_Pitts",
+    "Asobo_Pitts_S1_Reno"
+  ],
+  "inheritDefault": true,
+  "lights": {
+    "LowOilPressure": {
+      "expression": "A:GENERAL ENG OIL PRESSURE:1, psi < 60",
+      "note": "From cockpit.cfg"
+    },
+    "LowFuelPressure": {
+      "expression": "A:GENERAL ENG FUEL PRESSURE:1, psi < 14",
+      "note": "From cockpit.cfg"
+    },
+    "LowVolts": {
+      "expression": "A:ELECTRICAL MAIN BUS VOLTAGE, volts < 11.8",
+      "note": "From cockpit.cfg"
+    }
+  }
+}

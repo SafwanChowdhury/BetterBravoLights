@@ -154,6 +154,70 @@ namespace BravoLights.Tests
             }
         }
 
+        [Fact]
+        public void InstallsIntoMsfs2024StoreExeXml()
+        {
+            using (var paths = BuildTestFileSystem())
+            {
+                var folder = paths.Store2024Path;
+                paths.EstablishAsMSFSRoot(folder);
+
+                // MSFS 2024 names the file EXE.xml and uses a 'Launch' document type
+                var exeXml = Path.Join(folder, "EXE.xml");
+                File.WriteAllText(exeXml,
+                    @"<?xml version=""1.0"" encoding=""utf-8""?>
+<SimBase.Document version=""1,0"" Type=""Launch"">
+  <Descr>Launch</Descr>
+  <Filename>EXE.xml</Filename>
+  <Disabled>False</Disabled>
+  <Launch.ManualLoad>False</Launch.ManualLoad>
+  <Launch.Addon>
+    <Name>SomethingElse</Name>
+    <Disabled>false</Disabled>
+    <Path>C:\Something\Else.exe</Path>
+  </Launch.Addon>
+</SimBase.Document>
+");
+
+                var sim = Assert.Single(Installation.SimInstallation.Detect());
+                Assert.Equal(Installation.SimVersion.MSFS2024, sim.Version);
+                Assert.Equal("FlightSimulator2024", sim.ProcessName);
+
+                Installation.Installer.Install();
+
+                var xml = File.ReadAllText(exeXml);
+                Assert.Contains("<Name>BravoLights</Name>", xml);
+                Assert.Contains("<Name>SomethingElse</Name>", xml);
+                Assert.Contains("/startedbysimulator", xml);
+                Assert.True(File.Exists(exeXml + ".bbl-backup"));
+
+                var status = Installation.Installer.GetStatus(sim);
+                Assert.True(status.AutoStartEnabled);
+                Assert.True(status.WasmUpToDate);
+                Assert.True(Directory.Exists(Path.Join(paths.FSDataPath, "Community", "better-bravo-lights-lvar-module")));
+            }
+        }
+
+        [Fact]
+        public void DetectsBothSimulatorsAndUninstallsFromEach()
+        {
+            using (var paths = BuildTestFileSystem())
+            {
+                paths.EstablishAsMSFSRoot(paths.SteamPath);
+                paths.EstablishAsMSFSRoot(paths.Steam2024Path);
+
+                var sims = Installation.SimInstallation.Detect();
+                Assert.Equal(2, sims.Count);
+
+                Installation.Installer.Install();
+                Assert.All(sims, s => Assert.True(Installation.Installer.GetStatus(s).AutoStartEnabled));
+
+                Installation.Installer.Uninstall();
+                Assert.All(sims, s => Assert.False(Installation.Installer.GetStatus(s).AutoStartEnabled));
+                Assert.False(Directory.Exists(Path.Join(paths.FSDataPath, "Community", "better-bravo-lights-lvar-module")));
+            }
+        }
+
         private static string GetTemporaryDirectory()
         {
             string tempDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
@@ -169,6 +233,8 @@ namespace BravoLights.Tests
 
             var windowsStoreFolder = Path.Join(folder, "LOCALAPPDATA", "Packages", "Microsoft.FlightSimulator_8wekyb3d8bbwe", "LocalCache");
             var steamFolder = Path.Join(folder, "APPDATA", "Microsoft Flight Simulator");
+            var windowsStore2024Folder = Path.Join(folder, "LOCALAPPDATA", "Packages", "Microsoft.Limitless_8wekyb3d8bbwe", "LocalCache");
+            var steam2024Folder = Path.Join(folder, "APPDATA", "Microsoft Flight Simulator 2024");
 
             var fsDataFolder = Path.Join(folder, "FSDATA");
             Directory.CreateDirectory(fsDataFolder);
@@ -179,6 +245,8 @@ namespace BravoLights.Tests
                 TestRoot = folder,
                 StorePath = windowsStoreFolder,
                 SteamPath = steamFolder,
+                Store2024Path = windowsStore2024Folder,
+                Steam2024Path = steam2024Folder,
                 FSDataPath = fsDataFolder,
                 Disposer = () =>
                 {
@@ -200,6 +268,8 @@ namespace BravoLights.Tests
         public string TestRoot { get; set; }
         public string StorePath { get; set; }
         public string SteamPath { get; set; }
+        public string Store2024Path { get; set; }
+        public string Steam2024Path { get; set; }
         public string FSDataPath { get; set; }
 
         public void EstablishAsMSFSRoot(string folder)

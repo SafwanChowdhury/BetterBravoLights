@@ -1,0 +1,25 @@
+{
+  "format": "BetterBravoLights.Profile",
+  "version": 1,
+  "id": "asobo-robin-dr400-100-cadet",
+  "name": "Asobo Robin DR400/100 Cadet",
+  "enabled": true,
+  "aircraft": [
+    "Asobo_DR400"
+  ],
+  "inheritDefault": true,
+  "lights": {
+    "LowOilPressure": {
+      "expression": "A:GENERAL ENG OIL PRESSURE:1, psi < 24",
+      "note": "Files are encrypted; trial-and-error compared with annunciator"
+    },
+    "LowFuelPressure": {
+      "expression": "A:GENERAL ENG FUEL PRESSURE:1, psi < 2",
+      "note": "Files are encrypted; trial-and-error compared with annunicator"
+    },
+    "LowVolts": {
+      "expression": "A:ELECTRICAL MAIN BUS VOLTAGE:1, volts < 13.5",
+      "note": "Files are encrypted; 12V-based"
+    }
+  }
+}

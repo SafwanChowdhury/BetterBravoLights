@@ -1,0 +1,95 @@
+{
+  "format": "BetterBravoLights.Profile",
+  "version": 1,
+  "id": "aerosoft-crj",
+  "name": "Aerosoft CRJ 550/700/900/1000",
+  "enabled": true,
+  "aircraft": [
+    "Aerosoft_CRJ_550",
+    "Aerosoft_CRJ_700",
+    "Aerosoft_CRJ_900",
+    "Aerosoft_CRJ_1000"
+  ],
+  "inheritDefault": true,
+  "masterEnable": "L:ASCRJ_ELEC_BATTMASTER == 1",
+  "lights": {
+    "HDG": {
+      "expression": "L:ASCRJ_FCP_HDG_LED == 1"
+    },
+    "NAV": {
+      "expression": "L:ASCRJ_FCP_NAV_LED == 1"
+    },
+    "APR": {
+      "expression": "L:ASCRJ_FCP_APPR_LED == 1"
+    },
+    "REV": {
+      "expression": "L:ASCRJ_FCP_BC_LED == 1"
+    },
+    "ALT": {
+      "expression": "L:ASCRJ_FCP_ALT_LED == 1"
+    },
+    "VS": {
+      "expression": "L:ASCRJ_FCP_VS_LED == 1"
+    },
+    "IAS": {
+      "expression": "L:ASCRJ_FCP_SPEED_LED == 1"
+    },
+    "AUTOPILOT": {
+      "expression": "L:ASCRJ_FCP_AP_ENG_LED == 1"
+    },
+    "GearLGreen": {
+      "expression": "A:GEAR LEFT POSITION, percent over 100 >= 1"
+    },
+    "GearLRed": {
+      "expression": "A:GEAR LEFT POSITION, percent over 100 > 0 AND A:GEAR LEFT POSITION, percent over 100 < 1"
+    },
+    "GearCGreen": {
+      "expression": "A:GEAR CENTER POSITION, percent over 100 >= 1"
+    },
+    "GearCRed": {
+      "expression": "A:GEAR CENTER POSITION, percent over 100 > 0 AND A:GEAR CENTER POSITION, percent over 100 < 1"
+    },
+    "GearRGreen": {
+      "expression": "A:GEAR RIGHT POSITION, percent over 100 >= 1"
+    },
+    "GearRRed": {
+      "expression": "A:GEAR RIGHT POSITION, percent over 100 > 0 AND A:GEAR RIGHT POSITION, percent over 100 < 1"
+    },
+    "MasterWarning": {
+      "expression": "L:ASCRJ_GSC_MASTER_WARN_ON == 1"
+    },
+    "EngineFire": {
+      "expression": "L:ASCRJ_GSC_ENG_FIRE_ON == 1 OR L:ASCRJ_GSF_ENG_FIRE_ON == 1"
+    },
+    "AntiIce": {
+      "expression": "L:ASCRJ_AICE_DETECT_ICE == 1 AND (L:ASCRJ_AICE_PHEAT_L == 0 OR L:ASCRJ_AICE_PHEAT_R == 0)"
+    },
+    "StarterEngaged": {
+      "expression": "L:ASCRJ_ENGS_START_R_ON == 1 OR L:ASCRJ_ENGS_START_L_ON == 1"
+    },
+    "APU": {
+      "expression": "L:ASCRJ_APU_STARTSTOP == 1"
+    },
+    "MasterCaution": {
+      "expression": "L:ASCRJ_GSC_MASTER_CAUT_ON == 1"
+    },
+    "Vacuum": {
+      "expression": "OFF"
+    },
+    "LowHydPressure": {
+      "expression": "L:ASCRJ_HYDR_PUMP_1 == 1 OR L:ASCRJ_HYDR_PUMP_2 == 1 OR L:ASCRJ_HYDR_PUMP_3A == 0 OR L:ASCRJ_HYDR_PUMP_3B == 1"
+    },
+    "AuxFuelPump": {
+      "expression": "L:ASCRJ_FUEL_PUMP_L_ON == 1 OR L:ASCRJ_FUEL_PUMP_R_ON == 1"
+    },
+    "ParkingBrake": {
+      "expression": "L:ASCRJ_PARK_BRAKE == 1"
+    },
+    "LowVolts": {
+      "expression": "A:ELECTRICAL MAIN BUS VOLTAGE, volts < 23 AND A:ELECTRICAL MAIN BUS VOLTAGE, volts > 0"
+    },
+    "Door": {
+      "expression": "L:DOOR_MAIN_DOOR_POS > 0 OR L:DOOR_SERVICE_POS > 0 OR L:DOOR_FWD_CARGO_POS > 0 OR L:DOOR_AFT_CARGO_POS > 0"
+    }
+  }
+}
