@@ -1,0 +1,48 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Light palette: soft off-white with an indigo accent. Keys must match Dark.xaml. -->
+
+    <Color x:Key="BgColor">#FFF5F6F8</Color>
+    <Color x:Key="TextColor">#FF151821</Color>
+    <Color x:Key="AccentColor">#FF4C5FD5</Color>
+
+    <SolidColorBrush x:Key="BgBrush" Color="#FFF5F6F8" />
+    <SolidColorBrush x:Key="NavBrush" Color="#FFF5F6F8" />
+    <SolidColorBrush x:Key="SurfaceBrush" Color="#FFFFFFFF" />
+    <SolidColorBrush x:Key="Surface2Brush" Color="#FFF0F2F5" />
+    <SolidColorBrush x:Key="Surface3Brush" Color="#FFE6E9EE" />
+    <SolidColorBrush x:Key="BorderBrush" Color="#FFE5E8ED" />
+    <SolidColorBrush x:Key="InputBrush" Color="#FFF2F4F7" />
+
+    <SolidColorBrush x:Key="TextBrush" Color="#FF151821" />
+    <SolidColorBrush x:Key="TextDimBrush" Color="#FF5B6372" />
+    <SolidColorBrush x:Key="TextFaintBrush" Color="#FF9AA1AD" />
+
+    <SolidColorBrush x:Key="AccentBrush" Color="#FF4C5FD5" />
+    <SolidColorBrush x:Key="AccentHoverBrush" Color="#FF3D4FC2" />
+    <SolidColorBrush x:Key="AccentSoftBrush" Color="#1A4C5FD5" />
+    <SolidColorBrush x:Key="AccentTextBrush" Color="#FF3D4FC2" />
+    <SolidColorBrush x:Key="OnAccentBrush" Color="#FFFFFFFF" />
+
+    <SolidColorBrush x:Key="SuccessBrush" Color="#FF16A34A" />
+    <SolidColorBrush x:Key="SuccessSoftBrush" Color="#1A16A34A" />
+    <SolidColorBrush x:Key="WarningBrush" Color="#FFC2700A" />
+    <SolidColorBrush x:Key="WarningSoftBrush" Color="#1FD97706" />
+    <SolidColorBrush x:Key="DangerBrush" Color="#FFDC2626" />
+    <SolidColorBrush x:Key="DangerSoftBrush" Color="#16DC2626" />
+
+    <SolidColorBrush x:Key="HoverBrush" Color="#0A101828" />
+    <SolidColorBrush x:Key="PressedBrush" Color="#14101828" />
+    <SolidColorBrush x:Key="ScrollThumbBrush" Color="#FFD3D8DF" />
+    <SolidColorBrush x:Key="ScrollThumbHoverBrush" Color="#FFB9C0CA" />
+
+    <SolidColorBrush x:Key="LightOffBrush" Color="#FFD8DCE2" />
+
+    <SolidColorBrush x:Key="DeviceBrush" Color="#FF14161B" />
+    <SolidColorBrush x:Key="DeviceBorderBrush" Color="#FF14161B" />
+    <SolidColorBrush x:Key="DeviceKeyBrush" Color="#FF22252C" />
+    <SolidColorBrush x:Key="DeviceLabelBrush" Color="#FF6A707D" />
+    <SolidColorBrush x:Key="LitRedBrush" Color="#FFFF5A4E" />
+    <SolidColorBrush x:Key="LitAmberBrush" Color="#FFFFB224" />
+    <SolidColorBrush x:Key="LitGreenBrush" Color="#FF45E08A" />
+</ResourceDictionary>

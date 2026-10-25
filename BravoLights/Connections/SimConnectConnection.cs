@@ -21,6 +21,8 @@ namespace BravoLights.Connections
         WASMRequestResponse = 1,
         WASMLVars = 2,
         AircraftTitle = 3,
+        AircraftAtcModel = 4,
+        AircraftAtcType = 5,
 
         // The start of dynamically-allocated definitions for simulator variables
         DynamicStart = 100
@@ -34,6 +36,8 @@ namespace BravoLights.Connections
         AircraftLoaded = 4,
         FlightLoaded = 5,
         AircraftTitle = 6,
+        AircraftAtcModel = 7,
+        AircraftAtcType = 8,
 
         // The start of dynamically-allocated request ids for simulator variables
         DynamicStart = DefineId.DynamicStart
@@ -318,8 +322,19 @@ namespace BravoLights.Connections
             ConnectNow();
         }
 
+        /// <summary>
+        /// When set, never connect to the simulator (e.g. when rendering screenshots alongside a copy that's in use:
+        /// connecting would reset the shared WASM module's subscriptions).
+        /// </summary>
+        public static bool Disabled { get; set; }
+
         private void ConnectNow()
         {
+            if (Disabled)
+            {
+                return;
+            }
+
             logger.Debug("Attempting to connect to simulator");
 
             if (reconnectTimer != null)
@@ -413,12 +428,30 @@ namespace BravoLights.Connections
             logger.Debug("SimConnect exception {0} (send id {1}, index {2})", (SIMCONNECT_EXCEPTION)data.dwException, data.dwSendID, data.dwIndex);
         }
 
+        /// <summary>
+        /// Asks for the string variables that identify the user's aircraft. Each has its own definition so that a
+        /// variable one simulator doesn't recognise can't stop us receiving the others.
+        /// </summary>
         private void ConfigureAircraftTitle()
         {
-            simconnect.AddToDataDefinition(DefineId.AircraftTitle, "TITLE", null, SIMCONNECT_DATATYPE.STRING256, 0, SimConnect.SIMCONNECT_UNUSED);
-            simconnect.RegisterDataDefineStruct<AircraftTitleStruct>(DefineId.AircraftTitle);
-            simconnect.RequestDataOnSimObject(RequestId.AircraftTitle, DefineId.AircraftTitle, SimConnect.SIMCONNECT_OBJECT_ID_USER,
-                SIMCONNECT_PERIOD.SECOND, SIMCONNECT_DATA_REQUEST_FLAG.CHANGED, 0, 0, 0);
+            RequestAircraftString(DefineId.AircraftTitle, RequestId.AircraftTitle, "TITLE");
+            RequestAircraftString(DefineId.AircraftAtcModel, RequestId.AircraftAtcModel, "ATC MODEL");
+            RequestAircraftString(DefineId.AircraftAtcType, RequestId.AircraftAtcType, "ATC TYPE");
+        }
+
+        private void RequestAircraftString(DefineId defineId, RequestId requestId, string simVarName)
+        {
+            try
+            {
+                simconnect.AddToDataDefinition(defineId, simVarName, null, SIMCONNECT_DATATYPE.STRING256, 0, SimConnect.SIMCONNECT_UNUSED);
+                simconnect.RegisterDataDefineStruct<AircraftTitleStruct>(defineId);
+                simconnect.RequestDataOnSimObject(requestId, defineId, SimConnect.SIMCONNECT_OBJECT_ID_USER,
+                    SIMCONNECT_PERIOD.SECOND, SIMCONNECT_DATA_REQUEST_FLAG.CHANGED, 0, 0, 0);
+            }
+            catch (Exception ex)
+            {
+                logger.Debug(ex, "Failed to request {0}", simVarName);
+            }
         }
 
         private void ConfigureWASMComms()
@@ -645,7 +678,8 @@ namespace BravoLights.Connections
             }
             lastAircraftPath = aircraftPath;
 
-            var info = AircraftInfo.FromSimPath(aircraftPath, CurrentAircraft.Title);
+            // Keep the details we already have from simulation variables until updated ones arrive
+            var info = AircraftInfo.FromSimPath(aircraftPath).WithDetails(CurrentAircraft.Title, CurrentAircraft.AtcModel, CurrentAircraft.AtcType);
             SetAircraft(info);
 
             // Note: LVars are not registered by an aircraft until a little while _after_ it has loaded.
@@ -849,14 +883,17 @@ namespace BravoLights.Connections
             {
                 lastReceivedResponseFromSim = DateTime.UtcNow;
 
-                if (data.dwRequestID == (uint)RequestId.AircraftTitle)
+                switch ((RequestId)data.dwRequestID)
                 {
-                    var title = ((AircraftTitleStruct)data.dwData[0]).Title ?? "";
-                    if (title != CurrentAircraft.Title)
-                    {
-                        SetAircraft(CurrentAircraft.WithTitle(title));
-                    }
-                    return;
+                    case RequestId.AircraftTitle:
+                        SetAircraft(CurrentAircraft.WithDetails(title: ((AircraftTitleStruct)data.dwData[0]).Title ?? ""));
+                        return;
+                    case RequestId.AircraftAtcModel:
+                        SetAircraft(CurrentAircraft.WithDetails(atcModel: ((AircraftTitleStruct)data.dwData[0]).Title ?? ""));
+                        return;
+                    case RequestId.AircraftAtcType:
+                        SetAircraft(CurrentAircraft.WithDetails(atcType: ((AircraftTitleStruct)data.dwData[0]).Title ?? ""));
+                        return;
                 }
 
                 if (idToName.TryGetValue(data.dwRequestID, out NameAndUnits nau))

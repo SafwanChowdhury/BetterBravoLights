@@ -49,6 +49,78 @@ namespace BravoLights.Tests
             Assert.True(AircraftInfo.FromSimPath("").IsEmpty);
             Assert.True(AircraftInfo.FromSimPath(null).IsEmpty);
         }
+
+        [Theory]
+        [InlineData("TT:ATCCOM.AC_MODEL_B738.0.text", "B738")]
+        [InlineData("TT:ATCCOM.AC_MODEL A320.0.text", "A320")]
+        [InlineData("TT:ATCCOM.ATC_NAME BOEING.0.text", "BOEING")]
+        [InlineData("B738", "B738")]
+        [InlineData("  Boeing ", "Boeing")]
+        [InlineData("", "")]
+        [InlineData(null, "")]
+        public void CleansAtcStrings(string raw, string expected)
+        {
+            Assert.Equal(expected, AircraftInfo.CleanAtcString(raw));
+        }
+
+        [Fact]
+        public void KeepsDetailsWhenTheyArrive()
+        {
+            var info = AircraftInfo.FromSimPath(@"SimObjects\Airplanes\PMDG 737-800\aircraft.cfg")
+                .WithDetails(title: "737-800 BB2 BW")
+                .WithDetails(atcModel: "TT:ATCCOM.AC_MODEL_B738.0.text")
+                .WithDetails(atcType: "Boeing");
+            Assert.Equal("PMDG 737-800", info.Folder);
+            Assert.Equal("737-800 BB2 BW", info.Title);
+            Assert.Equal("B738", info.AtcModel);
+            Assert.Equal("Boeing", info.AtcType);
+        }
+    }
+
+    public class PatternSuggestionTests
+    {
+        private static readonly AircraftInfo Pmdg = new(
+            "PMDG 737-800", @"PMDG 737-800\presets\pmdg\PMDG 737-BBJ2 BW\config", "737-800 BB2 BW", "B738", "Boeing");
+
+        [Theory]
+        [InlineData("PMDG 737-800", "PMDG 737-*")]
+        [InlineData("FNX_32X", "FNX_*")]
+        [InlineData("Asobo_C172SP_Classic", "Asobo_C172SP_*")]
+        [InlineData("r44", null)]
+        [InlineData("Ab-c", null)]
+        [InlineData("Trailing-", null)]
+        public void SuggestsFamilyPatterns(string folder, string expected)
+        {
+            Assert.Equal(expected, AircraftPatternSuggestions.FamilyPattern(folder));
+        }
+
+        [Fact]
+        public void SuggestsPatternsFromBroadToNarrow()
+        {
+            var suggestions = AircraftPatternSuggestions.For(Pmdg);
+            Assert.Equal(
+                new[] { "PMDG 737-800", "PMDG 737-*", @"PMDG 737-800\presets\pmdg\PMDG 737-BBJ2 BW\config", "737-800 BB2 BW", "B738", "Boeing" },
+                suggestions.Select(s => s.Pattern));
+            Assert.True(suggestions[0].IsRecommended);
+            Assert.True(suggestions.Single(s => s.Pattern == "B738").IsBroad);
+
+            // Every suggestion must actually match the aircraft it came from
+            Assert.All(suggestions, s => Assert.True(ProfileMatcher.MatchesAircraft(s.Pattern, Pmdg), s.Pattern));
+        }
+
+        [Fact]
+        public void SuggestsNothingWithoutAnAircraft()
+        {
+            Assert.Empty(AircraftPatternSuggestions.For(AircraftInfo.None));
+        }
+
+        [Fact]
+        public void SkipsDuplicateSuggestions()
+        {
+            // MSFS 2020: path equals folder, so there's no separate 'exact variant' suggestion
+            var suggestions = AircraftPatternSuggestions.For(AircraftInfo.FromSimPath(@"SimObjects\Airplanes\Asobo_C172SP_Classic\aircraft.cfg"));
+            Assert.Equal(new[] { "Asobo_C172SP_Classic", "Asobo_C172SP_*" }, suggestions.Select(s => s.Pattern));
+        }
     }
 
     public class ProfileMatcherTests
@@ -77,6 +149,14 @@ namespace BravoLights.Tests
             Assert.Equal("folder", ProfileMatcher.Resolve(new[] { Default, P("a", "FNX_32X") }, aircraft).MatchedOn);
             Assert.Equal("path", ProfileMatcher.Resolve(new[] { Default, P("b", "*FNX_320_CFM*") }, aircraft).MatchedOn);
             Assert.Equal("title", ProfileMatcher.Resolve(new[] { Default, P("c", "*British Airways") }, aircraft).MatchedOn);
+        }
+
+        [Fact]
+        public void MatchesOnIcaoModelAndManufacturer()
+        {
+            var aircraft = new AircraftInfo("Some 737", "Some 737", "Livery", "B738", "Boeing");
+            Assert.Equal("ICAO model", ProfileMatcher.Resolve(new[] { Default, P("a", "B738") }, aircraft).MatchedOn);
+            Assert.Equal("manufacturer", ProfileMatcher.Resolve(new[] { Default, P("b", "Boeing") }, aircraft).MatchedOn);
         }
 
         [Fact]

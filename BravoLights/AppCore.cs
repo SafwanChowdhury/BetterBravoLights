@@ -26,7 +26,7 @@ namespace BravoLights
 
         private readonly Dispatcher dispatcher;
 
-        public AppCore(Dispatcher dispatcher)
+        public AppCore(Dispatcher dispatcher, bool useHardware = true)
         {
             this.dispatcher = dispatcher;
 
@@ -34,7 +34,8 @@ namespace BravoLights
             Templates = new TemplateLibrary(FlightSimulatorPaths.TemplatesPath);
             Store = new ProfileStore(FlightSimulatorPaths.ProfilesPath);
             Lights = new MainViewModel();
-            Usb = new UsbLogic(Lights);
+            // Without hardware (e.g. when rendering screenshots) we must not touch a Bravo another copy may be driving
+            Usb = useHardware ? new UsbLogic(Lights) : new NoBravo();
             GlobalLights = new GlobalLightController(Usb);
         }
 
@@ -42,7 +43,7 @@ namespace BravoLights
         public TemplateLibrary Templates { get; }
         public ProfileStore Store { get; }
         public MainViewModel Lights { get; }
-        public UsbLogic Usb { get; }
+        public IUsbLogic Usb { get; }
         public GlobalLightController GlobalLights { get; }
 
         internal SimConnectConnection Sim => SimConnectConnection.Connection;
@@ -162,6 +163,11 @@ namespace BravoLights
             }
         }
 
+        /// <summary>
+        /// Pretends an aircraft is loaded. Only used when rendering screenshots without a simulator.
+        /// </summary>
+        internal void SetPreviewAircraft(AircraftInfo preview) => Aircraft = preview;
+
         public IReadOnlyList<Profile> Profiles => Store.Profiles;
 
         private ProfileMatch activeMatch;
@@ -248,7 +254,7 @@ namespace BravoLights
             }
 
             var copy = profile.Clone();
-            if (!copy.Aircraft.Any(p => ProfileMatcher.IsMatch(p, aircraft.Folder) || ProfileMatcher.IsMatch(p, aircraft.Path)))
+            if (!copy.Aircraft.Any(p => ProfileMatcher.MatchesAircraft(p, aircraft)))
             {
                 copy.Aircraft.Add(pattern);
             }
@@ -364,5 +370,17 @@ namespace BravoLights
         {
             Store.Dispose();
         }
+    }
+}
+
+namespace BravoLights
+{
+    /// <summary>
+    /// Stands in for the Bravo when the app must not drive real hardware.
+    /// </summary>
+    internal sealed class NoBravo : BravoLights.Common.ViewModelBase, BravoLights.Common.IUsbLogic
+    {
+        public bool LightsEnabled { get; set; }
+        public bool BravoPresent => false;
     }
 }

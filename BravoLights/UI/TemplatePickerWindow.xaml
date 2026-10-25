@@ -4,14 +4,14 @@
         Style="{StaticResource AppWindow}"
         Title="Profile templates" Width="640" Height="600" MinWidth="480" MinHeight="400"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
-    <DockPanel Margin="18">
+    <DockPanel Margin="24,22">
         <StackPanel DockPanel.Dock="Top">
             <TextBlock Text="Built-in profile templates" Style="{StaticResource H2}" />
             <TextBlock Style="{StaticResource Dim}" Margin="0,4,0,12"
                        Text="Pick one template to open it as a new profile you can adjust before saving, or tick several to add them all to your library at once." />
             <Grid Margin="0,0,0,10">
                 <TextBox x:Name="SearchBox" TextChanged="SearchBox_TextChanged" />
-                <TextBlock Text="Search templates…" Foreground="{StaticResource TextFaintBrush}" IsHitTestVisible="False" Margin="10,0,0,0"
+                <TextBlock Text="Search templates…" Foreground="{DynamicResource TextFaintBrush}" IsHitTestVisible="False" Margin="10,0,0,0"
                            VerticalAlignment="Center" Visibility="{Binding Text, ElementName=SearchBox, Converter={StaticResource InvNullToVis}}" />
             </Grid>
         </StackPanel>
@@ -21,21 +21,21 @@
                 <Button Content="Cancel" IsCancel="True" Margin="0,0,8,0" />
                 <Button x:Name="OkButton" Content="Use template" IsDefault="True" Style="{StaticResource PrimaryButton}" Click="Ok_Click" MinWidth="100" />
             </StackPanel>
-            <TextBlock x:Name="CountText" VerticalAlignment="Center" Foreground="{StaticResource TextDimBrush}" />
+            <TextBlock x:Name="CountText" VerticalAlignment="Center" Foreground="{DynamicResource TextDimBrush}" />
         </DockPanel>
 
-        <ListBox x:Name="TemplateList" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="4"
+        <ListBox x:Name="TemplateList" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="6"
                  MouseDoubleClick="TemplateList_MouseDoubleClick">
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <DockPanel>
                         <CheckBox DockPanel.Dock="Left" IsChecked="{Binding IsChecked}" VerticalAlignment="Center" Margin="0,0,10,0" Click="CheckBox_Click" />
                         <Border DockPanel.Dock="Right" Style="{StaticResource Badge}" Visibility="{Binding InLibrary, Converter={StaticResource BoolToVis}}">
-                            <TextBlock Text="IN LIBRARY" FontSize="9.5" FontWeight="Bold" Foreground="{StaticResource TextDimBrush}" />
+                            <TextBlock Text="In library" FontSize="11" FontWeight="Medium" Foreground="{DynamicResource TextDimBrush}" />
                         </Border>
                         <StackPanel>
                             <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
-                            <TextBlock Text="{Binding Summary}" Foreground="{StaticResource TextDimBrush}" FontSize="11.5" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{Binding Summary}" Foreground="{DynamicResource TextDimBrush}" FontSize="11.5" TextTrimming="CharacterEllipsis" />
                         </StackPanel>
                     </DockPanel>
                 </DataTemplate>

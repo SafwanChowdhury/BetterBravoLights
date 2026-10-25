@@ -1,0 +1,104 @@
+<Window x:Class="BravoLights.UI.DetectAircraftWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Style="{StaticResource AppWindow}"
+        Title="Aircraft from the simulator" Width="720" Height="720" MinWidth="560" MinHeight="520"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+    <DockPanel Margin="26,22">
+        <!-- Header -->
+        <StackPanel DockPanel.Dock="Top">
+            <TextBlock Text="Aircraft from the simulator" Style="{StaticResource H2}" FontSize="18" />
+            <TextBlock x:Name="IntroText" Style="{StaticResource Dim}" Margin="0,4,0,16"
+                       Text="Pick how this profile should recognise the aircraft. This updates live if you change aircraft in the sim." />
+        </StackPanel>
+
+        <!-- Buttons -->
+        <DockPanel DockPanel.Dock="Bottom" Margin="0,16,0,0">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <Button Content="Cancel" IsCancel="True" Style="{StaticResource GhostButton}" Margin="0,0,8,0" Padding="14,7" />
+                <Button x:Name="OkButton" Content="Add patterns" IsDefault="True" Style="{StaticResource PrimaryButton}" Click="Ok_Click" MinWidth="120" />
+            </StackPanel>
+            <TextBlock x:Name="SelectionText" Style="{StaticResource Faint}" VerticalAlignment="Center" />
+        </DockPanel>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <!-- No aircraft -->
+                <Border x:Name="NoAircraftPanel" Style="{StaticResource Card}" Margin="0,0,0,14">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE709;" Style="{StaticResource Icon}" FontSize="18" Foreground="{DynamicResource TextFaintBrush}" Margin="0,0,14,0" />
+                        <StackPanel>
+                            <TextBlock Text="No aircraft loaded" FontWeight="SemiBold" />
+                            <TextBlock x:Name="NoAircraftText" Style="{StaticResource Faint}" Margin="0,2,0,0"
+                                       Text="Start MSFS 2020 or 2024 and load a flight. This window will fill in as soon as the aircraft loads." />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- What the sim reports -->
+                <Border x:Name="IdentifiersPanel" Style="{StaticResource Card}" Margin="0,0,0,14">
+                    <StackPanel>
+                        <TextBlock Text="What the simulator reports" Style="{StaticResource Label}" />
+                        <Grid x:Name="IdentifiersGrid" Margin="0,4,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="110" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                        </Grid>
+                        <TextBlock x:Name="CurrentProfileText" Style="{StaticResource Faint}" Margin="0,12,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Suggestions -->
+                <TextBlock x:Name="SuggestionsHeading" Text="Suggested patterns" Style="{StaticResource Label}" Margin="2,4,0,8" />
+                <ItemsControl x:Name="SuggestionsList">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border x:Name="row" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                                    CornerRadius="12" Padding="16,12" Margin="0,0,0,8" Cursor="Hand" MouseLeftButtonUp="Row_MouseLeftButtonUp">
+                                <DockPanel>
+                                    <CheckBox DockPanel.Dock="Left" IsChecked="{Binding IsChecked}" IsEnabled="{Binding CanSelect}" VerticalAlignment="Top" Margin="0,2,14,0" />
+                                    <StackPanel>
+                                        <WrapPanel>
+                                            <TextBlock Text="{Binding Pattern}" FontFamily="{StaticResource MonoFont}" FontSize="13" FontWeight="SemiBold" Margin="0,0,10,2" TextWrapping="Wrap" />
+                                            <Border Style="{StaticResource Badge}" Margin="0,0,6,2">
+                                                <TextBlock Text="{Binding Kind}" FontSize="11" Foreground="{DynamicResource TextDimBrush}" />
+                                            </Border>
+                                            <Border Style="{StaticResource Badge}" Background="{DynamicResource AccentSoftBrush}" Margin="0,0,6,2"
+                                                    Visibility="{Binding IsRecommended, Converter={StaticResource BoolToVis}}">
+                                                <TextBlock Text="Recommended" FontSize="11" FontWeight="Medium" Foreground="{DynamicResource AccentTextBrush}" />
+                                            </Border>
+                                            <Border Style="{StaticResource Badge}" Background="{DynamicResource WarningSoftBrush}" Margin="0,0,6,2"
+                                                    Visibility="{Binding IsBroad, Converter={StaticResource BoolToVis}}">
+                                                <TextBlock Text="Broad" FontSize="11" FontWeight="Medium" Foreground="{DynamicResource WarningBrush}" />
+                                            </Border>
+                                            <Border Style="{StaticResource Badge}" Background="{DynamicResource SuccessSoftBrush}" Margin="0,0,6,2"
+                                                    Visibility="{Binding AlreadyAdded, Converter={StaticResource BoolToVis}}">
+                                                <TextBlock Text="Already in this profile" FontSize="11" FontWeight="Medium" Foreground="{DynamicResource SuccessBrush}" />
+                                            </Border>
+                                        </WrapPanel>
+                                        <TextBlock Text="{Binding Description}" Style="{StaticResource Faint}" FontSize="12.5" Margin="0,3,0,0" />
+                                    </StackPanel>
+                                </DockPanel>
+                            </Border>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding IsChecked}" Value="True">
+                                    <Setter TargetName="row" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Custom -->
+                <TextBlock Text="Or type your own" Style="{StaticResource Label}" Margin="2,10,0,8" />
+                <Grid>
+                    <TextBox x:Name="CustomBox" FontFamily="{StaticResource MonoFont}" FontSize="12.5" TextChanged="CustomBox_TextChanged" Padding="10,7,150,7" />
+                    <TextBlock Text="e.g. PMDG 7*" Style="{StaticResource Placeholder}"
+                               Visibility="{Binding Text, ElementName=CustomBox, Converter={StaticResource InvNullToVis}}" />
+                    <TextBlock x:Name="CustomMatchText" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" FontSize="12" />
+                </Grid>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

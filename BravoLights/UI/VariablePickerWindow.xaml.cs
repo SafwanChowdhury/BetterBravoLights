@@ -25,7 +25,7 @@ namespace BravoLights.UI
         public VariablePickerWindow(AppCore core, IEnumerable<string> aircraftPatterns)
         {
             InitializeComponent();
-            SourceInitialized += (s, e) => WindowHelpers.UseDarkTitleBar(this);
+            SourceInitialized += (s, e) => ThemeManager.StyleTitleBar(this);
 
             var lvarNames = core.GetKnownLVarNames(aircraftPatterns);
             lvars = lvarNames.Select(n => new Entry { IsLVar = true, Name = n, Units = "", Description = null }).ToList();

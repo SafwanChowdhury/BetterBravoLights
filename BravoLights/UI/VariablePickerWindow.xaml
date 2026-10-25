@@ -4,12 +4,12 @@
         Style="{StaticResource AppWindow}"
         Title="Insert a variable" Width="720" Height="560" MinWidth="520" MinHeight="380"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
-    <DockPanel Margin="18">
+    <DockPanel Margin="24,22">
         <StackPanel DockPanel.Dock="Top">
             <TextBlock Text="Insert a variable" Style="{StaticResource H2}" />
             <TextBlock x:Name="SourceText" Style="{StaticResource Dim}" Margin="0,4,0,12" />
             <DockPanel Margin="0,0,0,10">
-                <Border DockPanel.Dock="Right" Background="{StaticResource Surface2Brush}" CornerRadius="6" Margin="10,0,0,0">
+                <Border DockPanel.Dock="Right" Style="{StaticResource Segment}" Margin="10,0,0,0">
                     <StackPanel Orientation="Horizontal">
                         <RadioButton x:Name="LVarsTab" Style="{StaticResource SegmentItem}" GroupName="kind" IsChecked="True" Checked="Kind_Checked" Content="L: variables" />
                         <RadioButton x:Name="SimVarsTab" Style="{StaticResource SegmentItem}" GroupName="kind" Checked="Kind_Checked" Content="A: variables" />
@@ -17,7 +17,7 @@
                 </Border>
                 <Grid>
                     <TextBox x:Name="SearchBox" TextChanged="SearchBox_TextChanged" PreviewKeyDown="SearchBox_PreviewKeyDown" />
-                    <TextBlock Text="Search… (several words narrow the list)" Foreground="{StaticResource TextFaintBrush}" IsHitTestVisible="False" Margin="10,0,0,0"
+                    <TextBlock Text="Search… (several words narrow the list)" Foreground="{DynamicResource TextFaintBrush}" IsHitTestVisible="False" Margin="10,0,0,0"
                                VerticalAlignment="Center" Visibility="{Binding Text, ElementName=SearchBox, Converter={StaticResource InvNullToVis}}" />
                 </Grid>
             </DockPanel>
@@ -29,7 +29,7 @@
                 <Button Content="Insert" IsDefault="True" Style="{StaticResource PrimaryButton}" Click="Insert_Click" MinWidth="80" />
             </StackPanel>
             <StackPanel Orientation="Horizontal">
-                <TextBlock Text="Insert as" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{StaticResource TextDimBrush}" />
+                <TextBlock Text="Insert as" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextDimBrush}" />
                 <ComboBox x:Name="ComparisonBox" Width="170" SelectedIndex="1">
                     <ComboBoxItem Content="variable only" Tag="" />
                     <ComboBoxItem Content="… == 1" Tag=" == 1" />
@@ -42,15 +42,15 @@
 
         <ListBox x:Name="ResultsList" MouseDoubleClick="ResultsList_MouseDoubleClick"
                  VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
-                 Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="4">
+                 Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="6">
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <StackPanel>
                         <DockPanel>
-                            <TextBlock DockPanel.Dock="Right" Text="{Binding Units}" Foreground="{StaticResource TextDimBrush}" FontSize="11.5" Margin="10,0,0,0" />
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding Units}" Foreground="{DynamicResource TextDimBrush}" FontSize="11.5" Margin="10,0,0,0" />
                             <TextBlock Text="{Binding Name}" FontFamily="{StaticResource MonoFont}" FontSize="12.5" TextTrimming="CharacterEllipsis" />
                         </DockPanel>
-                        <TextBlock Text="{Binding Description}" Foreground="{StaticResource TextDimBrush}" FontSize="11.5" TextTrimming="CharacterEllipsis"
+                        <TextBlock Text="{Binding Description}" Foreground="{DynamicResource TextDimBrush}" FontSize="11.5" TextTrimming="CharacterEllipsis"
                                    Visibility="{Binding Description, Converter={StaticResource NullToVis}}" />
                     </StackPanel>
                 </DataTemplate>

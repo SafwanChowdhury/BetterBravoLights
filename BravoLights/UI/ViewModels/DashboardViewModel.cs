@@ -150,6 +150,7 @@ namespace BravoLights.UI.ViewModels
                     RaisePropertyChanged(nameof(AircraftTitle));
                     RaisePropertyChanged(nameof(AircraftFolder));
                     RaisePropertyChanged(nameof(AircraftPath));
+                    RaisePropertyChanged(nameof(AircraftModel));
                     RaisePropertyChanged(nameof(HasAircraft));
                     break;
             }
@@ -217,6 +218,18 @@ namespace BravoLights.UI.ViewModels
         public string AircraftFolder => core.Aircraft.Folder;
         public string AircraftPath => core.Aircraft.Path;
 
+        /// <summary>
+        /// The ICAO model and manufacturer, e.g. "B738 · Boeing", or null if the simulator didn't report them.
+        /// </summary>
+        public string AircraftModel
+        {
+            get
+            {
+                var parts = new[] { core.Aircraft.AtcModel, core.Aircraft.AtcType }.Where(p => !string.IsNullOrEmpty(p)).ToList();
+                return parts.Count == 0 ? null : string.Join(" · ", parts);
+            }
+        }
+
         public string ActiveProfileName => core.ActiveProfile?.Name ?? "(none)";
         public string MatchExplanation => core.ActiveMatch?.Explanation;
         public bool IsUsingDefaultProfile => core.ActiveProfile?.IsDefault == true;
@@ -251,11 +264,10 @@ namespace BravoLights.UI.ViewModels
 
         private void CreateProfileForAircraft()
         {
-            var name = core.Aircraft.Title.Length > 0 ? core.Aircraft.Title : core.Aircraft.Folder;
             shell.CurrentPage = Page.Profiles;
             if (shell.CurrentPage == Page.Profiles)
             {
-                shell.Profiles.CreateProfileForCurrentAircraft(name);
+                shell.Profiles.CreateProfileFromSim();
             }
         }
 

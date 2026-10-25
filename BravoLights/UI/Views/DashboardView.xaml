@@ -4,21 +4,30 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:BravoLights.UI.ViewModels"
-             xmlns:ui="clr-namespace:BravoLights.UI"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=vm:DashboardViewModel}"
-             d:DesignWidth="980" d:DesignHeight="800">
+             d:DesignWidth="1000" d:DesignHeight="900">
     <UserControl.Resources>
-        <!-- A status card at the top of the dashboard -->
-        <Style x:Key="StatusCard" TargetType="Border" BasedOn="{StaticResource Card}">
-            <Setter Property="Padding" Value="14,12" />
+        <Style x:Key="StatTile" TargetType="Border" BasedOn="{StaticResource Card}">
+            <Setter Property="Padding" Value="16,14" />
             <Setter Property="Margin" Value="0,0,12,0" />
         </Style>
+        <Style x:Key="StatValue" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource DisplayFont}" />
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+        <Style x:Key="Dot" TargetType="Ellipse">
+            <Setter Property="Width" Value="8" />
+            <Setter Property="Height" Value="8" />
+            <Setter Property="Margin" Value="0,0,9,0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
 
-        <!-- A light on the on-screen Bravo -->
+        <!-- A key on the on-screen Bravo -->
         <Style x:Key="LightTileButton" TargetType="Button">
             <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Focusable" Value="True" />
             <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}" />
             <Setter Property="Command" Value="{Binding DataContext.SelectLightCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" />
             <Setter Property="CommandParameter" Value="{Binding}" />
@@ -27,10 +36,10 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Grid>
-                            <Border x:Name="selection" CornerRadius="7" BorderThickness="2" BorderBrush="Transparent" Margin="-3" />
-                            <Border x:Name="face" CornerRadius="5" BorderThickness="1" BorderBrush="#33000000">
+                            <Border x:Name="selection" CornerRadius="9" BorderThickness="2" BorderBrush="Transparent" Margin="-4" />
+                            <Border x:Name="face" CornerRadius="6">
                                 <Border.Background>
-                                    <MultiBinding Converter="{StaticResource LightBrush}">
+                                    <MultiBinding Converter="{StaticResource LightBrush}" ConverterParameter="Device">
                                         <Binding Path="Colour" />
                                         <Binding Path="IsLit" />
                                     </MultiBinding>
@@ -38,9 +47,9 @@
                                 <Grid>
                                     <TextBlock x:Name="label" Text="{Binding Label}" TextWrapping="Wrap" TextAlignment="Center"
                                                HorizontalAlignment="Center" VerticalAlignment="Center" Margin="4,2"
-                                               FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource LightOffTextBrush}" />
-                                    <Ellipse x:Name="errorDot" Width="7" Height="7" Fill="{StaticResource DangerBrush}" HorizontalAlignment="Right"
-                                             VerticalAlignment="Top" Margin="0,4,4,0" Visibility="{Binding HasError, Converter={StaticResource BoolToVis}}" />
+                                               FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource DeviceLabelBrush}" />
+                                    <Ellipse Width="6" Height="6" Fill="#FFF87171" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,5,5,0"
+                                             Visibility="{Binding HasError, Converter={StaticResource BoolToVis}}" />
                                 </Grid>
                             </Border>
                         </Grid>
@@ -49,18 +58,18 @@
                                 <Setter TargetName="label" Property="Foreground" Value="#E6000000" />
                                 <Setter TargetName="face" Property="Effect">
                                     <Setter.Value>
-                                        <DropShadowEffect BlurRadius="14" ShadowDepth="0" Opacity="0.55" Color="White" />
+                                        <DropShadowEffect BlurRadius="16" ShadowDepth="0" Opacity="0.5" Color="White" />
                                     </Setter.Value>
                                 </Setter>
                             </DataTrigger>
                             <DataTrigger Binding="{Binding IsUnconfigured}" Value="True">
-                                <Setter TargetName="face" Property="Opacity" Value="0.55" />
+                                <Setter TargetName="face" Property="Opacity" Value="0.5" />
                             </DataTrigger>
                             <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                <Setter TargetName="selection" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                                <Setter TargetName="selection" Property="BorderBrush" Value="#FF8B9CFF" />
                             </DataTrigger>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="face" Property="BorderBrush" Value="{StaticResource TextFaintBrush}" />
+                                <Setter TargetName="selection" Property="BorderBrush" Value="#408B9CFF" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -73,33 +82,36 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Grid Width="30" Height="30">
-                            <Ellipse x:Name="selection" StrokeThickness="2" Stroke="Transparent" Margin="-3" />
-                            <Ellipse x:Name="face" Stroke="#33000000">
+                            <Ellipse x:Name="selection" StrokeThickness="2" Stroke="Transparent" Margin="-4" />
+                            <Ellipse x:Name="face">
                                 <Ellipse.Fill>
-                                    <MultiBinding Converter="{StaticResource LightBrush}">
+                                    <MultiBinding Converter="{StaticResource LightBrush}" ConverterParameter="Device">
                                         <Binding Path="Colour" />
                                         <Binding Path="IsLit" />
                                     </MultiBinding>
                                 </Ellipse.Fill>
                             </Ellipse>
                             <TextBlock x:Name="label" Text="{Binding Label}" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                       FontSize="10" FontWeight="Bold" Foreground="{StaticResource LightOffTextBrush}" />
+                                       FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource DeviceLabelBrush}" />
                         </Grid>
                         <ControlTemplate.Triggers>
                             <DataTrigger Binding="{Binding IsLit}" Value="True">
                                 <Setter TargetName="label" Property="Foreground" Value="#E6000000" />
                                 <Setter TargetName="face" Property="Effect">
                                     <Setter.Value>
-                                        <DropShadowEffect BlurRadius="14" ShadowDepth="0" Opacity="0.6" Color="White" />
+                                        <DropShadowEffect BlurRadius="16" ShadowDepth="0" Opacity="0.55" Color="White" />
                                     </Setter.Value>
                                 </Setter>
                             </DataTrigger>
                             <DataTrigger Binding="{Binding IsUnconfigured}" Value="True">
-                                <Setter TargetName="face" Property="Opacity" Value="0.55" />
+                                <Setter TargetName="face" Property="Opacity" Value="0.5" />
                             </DataTrigger>
                             <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                <Setter TargetName="selection" Property="Stroke" Value="{StaticResource AccentBrush}" />
+                                <Setter TargetName="selection" Property="Stroke" Value="#FF8B9CFF" />
                             </DataTrigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="selection" Property="Stroke" Value="#408B9CFF" />
+                            </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
@@ -109,130 +121,132 @@
         <ItemsPanelTemplate x:Key="HorizontalPanel">
             <StackPanel Orientation="Horizontal" />
         </ItemsPanelTemplate>
+        <ItemsPanelTemplate x:Key="RowPanel">
+            <UniformGrid Rows="1" />
+        </ItemsPanelTemplate>
     </UserControl.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="28,24,28,28">
+        <StackPanel Margin="36,30,36,36">
             <!-- Header -->
-            <DockPanel Margin="0,0,0,18">
-                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button Command="{Binding LightTestCommand}" ToolTip="Light every light on the Bravo for 3 seconds">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#xEA80;" FontFamily="Segoe MDL2 Assets" Margin="0,2,8,0" />
-                            <TextBlock Text="Light test" />
-                        </StackPanel>
-                    </Button>
-                </StackPanel>
+            <DockPanel Margin="0,0,0,24">
+                <Button DockPanel.Dock="Right" VerticalAlignment="Center" Command="{Binding LightTestCommand}" ToolTip="Light every light on the Bravo for 3 seconds">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xEA80;" Style="{StaticResource Icon}" FontSize="13" Margin="0,0,8,0" />
+                        <TextBlock Text="Light test" />
+                    </StackPanel>
+                </Button>
                 <StackPanel>
                     <TextBlock Text="Dashboard" Style="{StaticResource H1}" />
-                    <TextBlock Text="What the simulator, your Bravo and the active profile are doing right now." Style="{StaticResource Dim}" Margin="0,4,0,0" />
+                    <TextBlock Text="Your simulator, Bravo and active profile at a glance." Style="{StaticResource Dim}" Margin="0,4,0,0" />
                 </StackPanel>
             </DockPanel>
 
-            <!-- Status cards -->
-            <Grid Margin="0,0,-12,16">
+            <!-- Status -->
+            <Grid Margin="0,0,-12,14">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition />
                     <ColumnDefinition />
                     <ColumnDefinition />
                     <ColumnDefinition />
                 </Grid.ColumnDefinitions>
-                <Border Style="{StaticResource StatusCard}">
+                <Border Style="{StaticResource StatTile}">
                     <StackPanel>
-                        <TextBlock Text="SIMULATOR" Style="{StaticResource Label}" />
+                        <TextBlock Text="Simulator" Style="{StaticResource Label}" />
                         <StackPanel Orientation="Horizontal">
-                            <Ellipse Width="10" Height="10" Margin="0,0,8,0" Fill="{Binding SimStatusLevel, Converter={StaticResource StatusBrush}}" />
-                            <TextBlock Text="{Binding SimStatusText}" FontSize="16" FontWeight="SemiBold" />
+                            <Ellipse Style="{StaticResource Dot}" Fill="{Binding SimStatusLevel, Converter={StaticResource StatusBrush}}" />
+                            <TextBlock Text="{Binding SimStatusText}" Style="{StaticResource StatValue}" />
                         </StackPanel>
-                        <TextBlock Text="{Binding SimStatusDetail}" Style="{StaticResource Dim}" FontSize="11.5" Margin="0,4,0,0" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" ToolTip="{Binding SimStatusDetail}" />
+                        <TextBlock Text="{Binding SimStatusDetail}" Style="{StaticResource Faint}" Margin="0,5,0,0" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" ToolTip="{Binding SimStatusDetail}" />
                     </StackPanel>
                 </Border>
-                <Border Grid.Column="1" Style="{StaticResource StatusCard}">
+                <Border Grid.Column="1" Style="{StaticResource StatTile}">
                     <StackPanel>
-                        <TextBlock Text="HONEYCOMB BRAVO" Style="{StaticResource Label}" />
+                        <TextBlock Text="Honeycomb Bravo" Style="{StaticResource Label}" />
                         <StackPanel Orientation="Horizontal">
-                            <Ellipse Width="10" Height="10" Margin="0,0,8,0" Fill="{Binding BravoStatusLevel, Converter={StaticResource StatusBrush}}" />
-                            <TextBlock Text="{Binding BravoStatusText}" FontSize="16" FontWeight="SemiBold" />
+                            <Ellipse Style="{StaticResource Dot}" Fill="{Binding BravoStatusLevel, Converter={StaticResource StatusBrush}}" />
+                            <TextBlock Text="{Binding BravoStatusText}" Style="{StaticResource StatValue}" />
                         </StackPanel>
-                        <TextBlock Text="USB throttle quadrant" Style="{StaticResource Dim}" FontSize="11.5" Margin="0,4,0,0" />
+                        <TextBlock Text="USB throttle quadrant" Style="{StaticResource Faint}" Margin="0,5,0,0" />
                     </StackPanel>
                 </Border>
-                <Border Grid.Column="2" Style="{StaticResource StatusCard}">
+                <Border Grid.Column="2" Style="{StaticResource StatTile}">
                     <StackPanel>
-                        <TextBlock Text="LVAR MODULE" Style="{StaticResource Label}" />
+                        <TextBlock Text="LVar module" Style="{StaticResource Label}" />
                         <StackPanel Orientation="Horizontal">
-                            <Ellipse Width="10" Height="10" Margin="0,0,8,0" Fill="{Binding ModuleStatusLevel, Converter={StaticResource StatusBrush}}" />
-                            <TextBlock Text="{Binding ModuleStatusText}" FontSize="16" FontWeight="SemiBold" />
+                            <Ellipse Style="{StaticResource Dot}" Fill="{Binding ModuleStatusLevel, Converter={StaticResource StatusBrush}}" />
+                            <TextBlock Text="{Binding ModuleStatusText}" Style="{StaticResource StatValue}" />
                         </StackPanel>
-                        <TextBlock Text="{Binding ModuleStatusDetail}" Style="{StaticResource Dim}" FontSize="11.5" Margin="0,4,0,0" />
+                        <TextBlock Text="{Binding ModuleStatusDetail}" Style="{StaticResource Faint}" Margin="0,5,0,0" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" ToolTip="{Binding ModuleStatusDetail}" />
                     </StackPanel>
                 </Border>
-                <Border Grid.Column="3" Style="{StaticResource StatusCard}">
+                <Border Grid.Column="3" Style="{StaticResource StatTile}">
                     <StackPanel>
-                        <TextBlock Text="BRAVO LIGHTS" Style="{StaticResource Label}" />
+                        <TextBlock Text="Lights" Style="{StaticResource Label}" />
                         <StackPanel Orientation="Horizontal">
-                            <Ellipse Width="10" Height="10" Margin="0,0,8,0" Fill="{Binding LightsStatusLevel, Converter={StaticResource StatusBrush}}" />
-                            <TextBlock Text="{Binding LightsStatusText}" FontSize="16" FontWeight="SemiBold" />
+                            <Ellipse Style="{StaticResource Dot}" Fill="{Binding LightsStatusLevel, Converter={StaticResource StatusBrush}}" />
+                            <TextBlock Text="{Binding LightsStatusText}" Style="{StaticResource StatValue}" />
                         </StackPanel>
-                        <TextBlock Text="Lights go out in menus and on exit" Style="{StaticResource Dim}" FontSize="11.5" Margin="0,4,0,0" />
+                        <TextBlock Text="Off in menus and when idle" Style="{StaticResource Faint}" Margin="0,5,0,0" />
                     </StackPanel>
                 </Border>
             </Grid>
 
-            <!-- Aircraft + profile -->
-            <Grid Margin="0,0,0,16">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="12" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
+            <!-- Aircraft and profile -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,14" Padding="0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="1" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
 
-                <Border Style="{StaticResource Card}">
-                    <StackPanel>
-                        <TextBlock Text="LOADED AIRCRAFT" Style="{StaticResource Label}" />
-                        <TextBlock Text="{Binding AircraftTitle}" Style="{StaticResource H2}" TextWrapping="Wrap" />
-                        <Grid Margin="0,10,0,0" Visibility="{Binding HasAircraft, Converter={StaticResource BoolToVis}}">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions>
-                                <RowDefinition />
-                                <RowDefinition />
-                            </Grid.RowDefinitions>
-                            <TextBlock Text="Folder" Foreground="{StaticResource TextDimBrush}" Margin="0,0,12,4" />
-                            <TextBox Grid.Column="1" Text="{Binding AircraftFolder, Mode=OneWay}" IsReadOnly="True" FontFamily="{StaticResource MonoFont}"
-                                     FontSize="12" Padding="6,2" Margin="0,0,0,4" BorderThickness="0" />
-                            <TextBlock Grid.Row="1" Text="Path" Foreground="{StaticResource TextDimBrush}" Margin="0,0,12,0" />
-                            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding AircraftPath, Mode=OneWay}" IsReadOnly="True" FontFamily="{StaticResource MonoFont}"
-                                     FontSize="12" Padding="6,2" BorderThickness="0" TextWrapping="Wrap" />
-                        </Grid>
+                    <StackPanel Margin="22,20">
+                        <TextBlock Text="Aircraft" Style="{StaticResource Label}" />
+                        <TextBlock Text="{Binding AircraftTitle}" Style="{StaticResource H2}" FontSize="18" TextWrapping="Wrap" />
+                        <StackPanel Visibility="{Binding HasAircraft, Converter={StaticResource BoolToVis}}" Margin="0,12,0,0">
+                            <WrapPanel>
+                                <Border Style="{StaticResource Badge}" HorizontalAlignment="Left" Padding="8,3" Margin="0,0,8,0" ToolTip="Aircraft folder">
+                                    <TextBox Style="{StaticResource ReadOnlyText}" Text="{Binding AircraftFolder, Mode=OneWay}" FontFamily="{StaticResource MonoFont}" FontSize="12" />
+                                </Border>
+                                <Border Style="{StaticResource Badge}" HorizontalAlignment="Left" Padding="8,3" ToolTip="ICAO model and manufacturer reported by the simulator"
+                                        Visibility="{Binding AircraftModel, Converter={StaticResource NullToVis}}">
+                                    <TextBlock Text="{Binding AircraftModel}" FontSize="12" Foreground="{DynamicResource TextDimBrush}" />
+                                </Border>
+                            </WrapPanel>
+                            <TextBox Style="{StaticResource ReadOnlyText}" Text="{Binding AircraftPath, Mode=OneWay}" Margin="0,10,0,0"
+                                     FontFamily="{StaticResource MonoFont}" FontSize="11.5" Foreground="{DynamicResource TextFaintBrush}" />
+                        </StackPanel>
                         <TextBlock Margin="0,8,0,0" Style="{StaticResource Dim}" Visibility="{Binding HasAircraft, Converter={StaticResource InvBoolToVis}}"
                                    Text="Load a flight in MSFS 2020 or 2024 and the aircraft will appear here." />
                     </StackPanel>
-                </Border>
 
-                <Border Grid.Column="2" Style="{StaticResource Card}">
-                    <StackPanel>
-                        <TextBlock Text="ACTIVE PROFILE" Style="{StaticResource Label}" />
+                    <Border Grid.Column="1" Background="{DynamicResource BorderBrush}" Margin="0,20" />
+
+                    <StackPanel Grid.Column="2" Margin="22,20">
+                        <TextBlock Text="Active profile" Style="{StaticResource Label}" />
                         <DockPanel>
-                            <Border DockPanel.Dock="Right" Style="{StaticResource Badge}" Background="{StaticResource WarningSoftBrush}"
+                            <Border DockPanel.Dock="Right" Style="{StaticResource Badge}" Background="{DynamicResource WarningSoftBrush}"
                                     Visibility="{Binding IsUsingDefaultProfile, Converter={StaticResource BoolToVis}}">
-                                <TextBlock Text="DEFAULT" FontSize="10" FontWeight="Bold" Foreground="{StaticResource WarningBrush}" />
+                                <TextBlock Text="Default" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource WarningBrush}" />
                             </Border>
-                            <TextBlock Text="{Binding ActiveProfileName}" Style="{StaticResource H2}" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{Binding ActiveProfileName}" Style="{StaticResource H2}" FontSize="18" TextTrimming="CharacterEllipsis" />
                         </DockPanel>
-                        <TextBlock Text="{Binding MatchExplanation}" Style="{StaticResource Dim}" Margin="0,4,0,10" />
+                        <TextBlock Text="{Binding MatchExplanation}" Style="{StaticResource Faint}" Margin="0,4,0,14" />
 
-                        <TextBlock Text="Profile to use" Style="{StaticResource Label}" />
-                        <ComboBox ItemsSource="{Binding ProfileChoices}" SelectedItem="{Binding SelectedChoice}" DisplayMemberPath="Name" Margin="0,0,0,12" />
+                        <ComboBox ItemsSource="{Binding ProfileChoices}" SelectedItem="{Binding SelectedChoice}" DisplayMemberPath="Name" Margin="0,0,0,12"
+                                  ToolTip="Which profile drives the lights. 'Automatic' picks one by matching the loaded aircraft." />
 
                         <WrapPanel>
-                            <Button Content="Edit profile" Command="{Binding EditProfileCommand}" Margin="0,0,8,6" />
-                            <Button Content="New profile for this aircraft" Command="{Binding CreateProfileForAircraftCommand}" Margin="0,0,8,6" />
-                            <Button x:Name="AssignButton" Content="Use a profile for this aircraft ▾" Margin="0,0,8,6" Click="AssignButton_Click"
-                                    IsEnabled="{Binding HasAircraft}"
-                                    ToolTip="Adds this aircraft to an existing profile, so it's chosen automatically from now on">
+                            <Button Content="Edit profile" Style="{StaticResource PrimaryButton}" Command="{Binding EditProfileCommand}" Margin="0,0,8,6" />
+                            <Button Content="New for this aircraft" Command="{Binding CreateProfileForAircraftCommand}" Margin="0,0,8,6" />
+                            <Button x:Name="AssignButton" Style="{StaticResource GhostButton}" Margin="0,0,0,6" Click="AssignButton_Click"
+                                    IsEnabled="{Binding HasAircraft}" Padding="10,7"
+                                    ToolTip="Add this aircraft to an existing profile, so it's chosen automatically from now on">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Assign to profile" />
+                                    <TextBlock Text="&#xE70D;" Style="{StaticResource Icon}" FontSize="9" Margin="6,1,0,0" />
+                                </StackPanel>
                                 <Button.ContextMenu>
                                     <ContextMenu ItemsSource="{Binding AssignableProfiles}">
                                         <ContextMenu.ItemContainerStyle>
@@ -247,170 +261,146 @@
                             </Button>
                         </WrapPanel>
                     </StackPanel>
-                </Border>
-            </Grid>
+                </Grid>
+            </Border>
 
-            <!-- Bravo + detail -->
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="16" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
+            <!-- The Bravo: drawn like the real (black) hardware in both themes -->
+            <Border Background="{DynamicResource DeviceBrush}" BorderBrush="{DynamicResource DeviceBorderBrush}" BorderThickness="1"
+                    CornerRadius="18" Padding="26,22" Margin="0,0,0,14">
+                <StackPanel>
+                    <DockPanel Margin="0,0,0,16">
+                        <TextBlock DockPanel.Dock="Right" Text="Click a light for details" Foreground="{DynamicResource DeviceLabelBrush}" FontSize="12" VerticalAlignment="Center" />
+                        <TextBlock Text="HONEYCOMB BRAVO" Foreground="{DynamicResource DeviceLabelBrush}" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    </DockPanel>
 
-                <Border Style="{StaticResource Card}" Padding="20">
-                    <StackPanel>
-                        <DockPanel Margin="0,0,0,14">
-                            <TextBlock DockPanel.Dock="Right" Text="Click a light for details" Style="{StaticResource Dim}" FontSize="11.5" VerticalAlignment="Center" />
-                            <TextBlock Text="BRAVO LIGHTS" Style="{StaticResource Label}" Margin="0" />
-                        </DockPanel>
+                    <ItemsControl ItemsSource="{Binding AutopilotTiles}" ItemsPanel="{StaticResource RowPanel}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Style="{StaticResource LightTileButton}" Height="38" Margin="5" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
 
-                        <!-- Autopilot buttons -->
-                        <ItemsControl ItemsSource="{Binding AutopilotTiles}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <UniformGrid Rows="1" />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Button Style="{StaticResource LightTileButton}" Height="40" Margin="4" />
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-
-                        <Grid Margin="0,18,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="24" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-
-                            <!-- Gear -->
-                            <Border Background="{StaticResource Surface2Brush}" CornerRadius="8" Padding="14,12">
-                                <StackPanel>
-                                    <TextBlock Text="GEAR" Style="{StaticResource Label}" HorizontalAlignment="Center" />
-                                    <ItemsControl ItemsSource="{Binding GearRedTiles}" ItemsPanel="{StaticResource HorizontalPanel}" Margin="0,4,0,0">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Button Style="{StaticResource GearLightButton}" Margin="5" />
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                    <ItemsControl ItemsSource="{Binding GearGreenTiles}" ItemsPanel="{StaticResource HorizontalPanel}">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Button Style="{StaticResource GearLightButton}" Margin="5" />
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </StackPanel>
-                            </Border>
-
-                            <!-- Annunciator panel -->
-                            <Border Grid.Column="2" Background="#FF0B0D11" CornerRadius="8" Padding="8" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
-                                <StackPanel>
-                                    <ItemsControl ItemsSource="{Binding WarningTiles}">
-                                        <ItemsControl.ItemsPanel>
-                                            <ItemsPanelTemplate>
-                                                <UniformGrid Rows="1" />
-                                            </ItemsPanelTemplate>
-                                        </ItemsControl.ItemsPanel>
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Button Style="{StaticResource LightTileButton}" Height="44" Margin="3" />
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                    <ItemsControl ItemsSource="{Binding CautionTiles}">
-                                        <ItemsControl.ItemsPanel>
-                                            <ItemsPanelTemplate>
-                                                <UniformGrid Rows="1" />
-                                            </ItemsPanelTemplate>
-                                        </ItemsControl.ItemsPanel>
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Button Style="{StaticResource LightTileButton}" Height="44" Margin="3" />
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </StackPanel>
-                            </Border>
-                        </Grid>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
-                            <Ellipse Width="7" Height="7" Fill="{StaticResource DangerBrush}" Margin="0,0,6,0" VerticalAlignment="Center" />
-                            <TextBlock Text="expression error" Style="{StaticResource Dim}" FontSize="11.5" Margin="0,0,16,0" />
-                            <Border Width="14" Height="10" CornerRadius="2" Background="{StaticResource LightOffBrush}" Opacity="0.55" Margin="0,0,6,0" VerticalAlignment="Center" />
-                            <TextBlock Text="not configured" Style="{StaticResource Dim}" FontSize="11.5" />
-                        </StackPanel>
-                    </StackPanel>
-                </Border>
-
-                <!-- Selected light detail -->
-                <Border Grid.Row="2" Style="{StaticResource Card}">
-                    <Grid>
+                    <Grid Margin="0,18,0,0">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="24" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="28" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                    <StackPanel>
-                        <TextBlock Text="SELECTED LIGHT" Style="{StaticResource Label}" />
-                        <DockPanel>
-                            <Button DockPanel.Dock="Right" Style="{StaticResource SmallButton}" Content="Edit in profile" Command="{Binding EditLightCommand}" VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding SelectedLight.Info.Label}" Style="{StaticResource H2}" />
-                        </DockPanel>
-                        <TextBlock Text="{Binding SelectedSource}" Style="{StaticResource Dim}" Margin="0,2,0,10" />
 
-                        <TextBlock Text="Expression" Style="{StaticResource Label}" />
-                        <Border Background="{StaticResource BgBrush}" CornerRadius="6" Padding="10,8" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
-                            <TextBox Text="{Binding SelectedExpression, Mode=OneWay}" IsReadOnly="True" Background="Transparent" BorderThickness="0" Padding="0"
-                                     FontFamily="{StaticResource MonoFont}" FontSize="12" TextWrapping="Wrap" />
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="GEAR" Foreground="{DynamicResource DeviceLabelBrush}" FontSize="10" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,4" />
+                            <ItemsControl ItemsSource="{Binding GearRedTiles}" ItemsPanel="{StaticResource HorizontalPanel}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Style="{StaticResource GearLightButton}" Margin="6" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <ItemsControl ItemsSource="{Binding GearGreenTiles}" ItemsPanel="{StaticResource HorizontalPanel}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Style="{StaticResource GearLightButton}" Margin="6" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="2">
+                            <ItemsControl ItemsSource="{Binding WarningTiles}" ItemsPanel="{StaticResource RowPanel}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Style="{StaticResource LightTileButton}" Height="44" Margin="4" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <ItemsControl ItemsSource="{Binding CautionTiles}" ItemsPanel="{StaticResource RowPanel}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Style="{StaticResource LightTileButton}" Height="44" Margin="4" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Grid>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
+                        <Ellipse Width="6" Height="6" Fill="#FFF87171" Margin="0,0,7,0" VerticalAlignment="Center" />
+                        <TextBlock Text="Expression error" Foreground="{DynamicResource DeviceLabelBrush}" FontSize="11.5" Margin="0,0,18,0" />
+                        <Border Width="14" Height="9" CornerRadius="2" Background="{DynamicResource DeviceKeyBrush}" Opacity="0.5" Margin="0,0,7,0" VerticalAlignment="Center" />
+                        <TextBlock Text="Not configured" Foreground="{DynamicResource DeviceLabelBrush}" FontSize="11.5" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Selected light -->
+            <Border Style="{StaticResource Card}" Padding="0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="1" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Margin="22,20">
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Style="{StaticResource SmallButton}" Command="{Binding EditLightCommand}" VerticalAlignment="Top">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE70F;" Style="{StaticResource Icon}" FontSize="11" Margin="0,0,6,0" />
+                                    <TextBlock Text="Edit" />
+                                </StackPanel>
+                            </Button>
+                            <StackPanel>
+                                <TextBlock Text="Selected light" Style="{StaticResource Label}" />
+                                <TextBlock Text="{Binding SelectedLight.Info.Label}" Style="{StaticResource H2}" FontSize="18" />
+                            </StackPanel>
+                        </DockPanel>
+                        <TextBlock Text="{Binding SelectedSource}" Style="{StaticResource Faint}" Margin="0,4,0,14" />
+
+                        <Border Background="{DynamicResource InputBrush}" CornerRadius="8" Padding="12,9">
+                            <TextBox Style="{StaticResource ReadOnlyText}" Text="{Binding SelectedExpression, Mode=OneWay}" FontFamily="{StaticResource MonoFont}" FontSize="12.5" />
                         </Border>
-                        <TextBlock Text="Inverted: lit when the expression is false" Foreground="{StaticResource WarningBrush}" Margin="0,4,0,0" FontSize="11.5"
+                        <TextBlock Text="Inverted: lit when the expression is false" Foreground="{DynamicResource WarningBrush}" Margin="0,6,0,0" FontSize="12"
                                    Visibility="{Binding SelectedInvert, Converter={StaticResource BoolToVis}}" />
-                        <TextBlock Text="{Binding SelectedError}" Foreground="{StaticResource DangerBrush}" TextWrapping="Wrap" Margin="0,6,0,0"
+                        <TextBlock Text="{Binding SelectedError}" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" Margin="0,6,0,0"
                                    Visibility="{Binding SelectedError, Converter={StaticResource NullToVis}}" />
-                        <TextBlock Text="{Binding SelectedNote}" Style="{StaticResource Dim}" FontStyle="Italic" Margin="0,6,0,0"
+                        <TextBlock Text="{Binding SelectedNote}" Style="{StaticResource Dim}" FontStyle="Italic" Margin="0,8,0,0"
                                    Visibility="{Binding SelectedNote, Converter={StaticResource NullToVis}}" />
 
-                        <TextBlock Text="Master enable (applies to every light)" Style="{StaticResource Label}" Margin="0,12,0,4" />
-                        <TextBlock Text="{Binding MasterEnableText}" Style="{StaticResource Mono}" Foreground="{StaticResource TextDimBrush}" TextWrapping="Wrap" />
+                        <TextBlock Text="Master enable" Style="{StaticResource Label}" Margin="0,16,0,4" />
+                        <TextBlock Text="{Binding MasterEnableText}" Style="{StaticResource Mono}" Foreground="{DynamicResource TextDimBrush}" TextWrapping="Wrap" />
                     </StackPanel>
 
-                    <StackPanel Grid.Column="2">
-                        <TextBlock Text="LIVE VALUES" Style="{StaticResource Label}" />
-                        <TextBlock Text="Every variable this light depends on, including master enable." Style="{StaticResource Dim}" FontSize="11.5" Margin="0,0,0,8" />
+                    <Border Grid.Column="1" Background="{DynamicResource BorderBrush}" Margin="0,20" />
+
+                    <StackPanel Grid.Column="2" Margin="22,20">
+                        <TextBlock Text="Live values" Style="{StaticResource Label}" />
+                        <TextBlock Text="Every variable this light depends on, including master enable." Style="{StaticResource Faint}" Margin="0,0,0,12" />
                         <ItemsControl ItemsSource="{Binding Monitor.Variables}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Grid Margin="0,3">
+                                    <Grid Margin="0,4">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Text="{Binding Name}" Style="{StaticResource Mono}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Name}" Margin="0,0,10,0" />
-                                        <TextBlock Grid.Column="1" Text="{Binding ValueText}" Style="{StaticResource Mono}" MaxWidth="220" TextTrimming="CharacterEllipsis"
-                                                   ToolTip="{Binding ValueText}">
-                                            <TextBlock.Foreground>
-                                                <Binding Path="IsError">
-                                                    <Binding.Converter>
-                                                        <ui:BoolToBrushConverter TrueBrush="{StaticResource DangerBrush}" FalseBrush="{StaticResource SuccessBrush}" />
-                                                    </Binding.Converter>
-                                                </Binding>
-                                            </TextBlock.Foreground>
-                                        </TextBlock>
+                                        <TextBlock Text="{Binding Name}" Style="{StaticResource Mono}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Name}" Margin="0,0,12,0" />
+                                        <TextBlock x:Name="value" Grid.Column="1" Text="{Binding ValueText}" Style="{StaticResource Mono}" MaxWidth="220" TextTrimming="CharacterEllipsis"
+                                                   ToolTip="{Binding ValueText}" Foreground="{DynamicResource SuccessBrush}" />
                                     </Grid>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding IsError}" Value="True">
+                                            <Setter TargetName="value" Property="Foreground" Value="{DynamicResource TextFaintBrush}" />
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
-                        <TextBlock Text="This light doesn't use any variables." Style="{StaticResource Dim}" FontSize="11.5"
+                        <TextBlock Text="This light doesn't use any variables." Style="{StaticResource Faint}"
                                    Visibility="{Binding Monitor.Variables.Count, Converter={StaticResource ZeroToVis}, FallbackValue=Visible}" />
                     </StackPanel>
-                    </Grid>
-                </Border>
-            </Grid>
+                </Grid>
+            </Border>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

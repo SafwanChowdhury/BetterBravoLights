@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
@@ -204,6 +205,7 @@ namespace BravoLights.UI.ViewModels
             RevertCommand = new RelayCommand(Revert, () => IsDirty && !IsNew);
             AddPatternCommand = new RelayCommand(AddPattern, () => !string.IsNullOrWhiteSpace(NewPattern));
             AddCurrentAircraftCommand = new RelayCommand(AddCurrentAircraft, () => !core.Aircraft.IsEmpty && !IsDefault);
+            DetectFromSimCommand = new RelayCommand(DetectFromSim, () => !IsDefault);
             UseNowCommand = new RelayCommand(() => core.ManualProfileId = original.Id, () => !IsNew);
 
             Lights = new ObservableCollection<LightEditorRow>();
@@ -273,6 +275,7 @@ namespace BravoLights.UI.ViewModels
         public ICommand RevertCommand { get; }
         public ICommand AddPatternCommand { get; }
         public ICommand AddCurrentAircraftCommand { get; }
+        public ICommand DetectFromSimCommand { get; }
         public ICommand UseNowCommand { get; }
 
         private void Load(Profile profile)
@@ -448,6 +451,38 @@ namespace BravoLights.UI.ViewModels
             }
         }
 
+        /// <summary>
+        /// Shows what the simulator reports about the loaded aircraft and adds the patterns the user picks.
+        /// </summary>
+        private void DetectFromSim()
+        {
+            var window = new DetectAircraftWindow(core, Patterns.Select(p => p.Pattern), creatingProfile: false)
+            {
+                Owner = System.Windows.Application.Current.MainWindow
+            };
+            if (window.ShowDialog() == true)
+            {
+                AddPatterns(window.SelectedPatterns);
+            }
+        }
+
+        public void AddPatterns(IEnumerable<string> patterns)
+        {
+            var added = false;
+            foreach (var p in patterns.Select(p => p?.Trim()).Where(p => !string.IsNullOrEmpty(p)))
+            {
+                if (!Patterns.Any(x => string.Equals(x.Pattern, p, StringComparison.OrdinalIgnoreCase)))
+                {
+                    Patterns.Add(new PatternItem(this, p));
+                    added = true;
+                }
+            }
+            if (added)
+            {
+                OnPatternsChanged();
+            }
+        }
+
         public void RemovePattern(PatternItem item)
         {
             Patterns.Remove(item);
@@ -465,9 +500,7 @@ namespace BravoLights.UI.ViewModels
             var aircraft = core.Aircraft;
             foreach (var p in Patterns)
             {
-                p.MatchesCurrentAircraft = ProfileMatcher.IsMatch(p.Pattern, aircraft.Folder) ||
-                    ProfileMatcher.IsMatch(p.Pattern, aircraft.Path) ||
-                    ProfileMatcher.IsMatch(p.Pattern, aircraft.Title);
+                p.MatchesCurrentAircraft = ProfileMatcher.MatchesAircraft(p.Pattern, aircraft);
             }
 
             MatchesCurrentAircraft = Patterns.Any(p => p.MatchesCurrentAircraft);
