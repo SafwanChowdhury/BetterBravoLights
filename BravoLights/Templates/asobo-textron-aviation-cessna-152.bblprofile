@@ -1,0 +1,21 @@
+{
+  "format": "BetterBravoLights.Profile",
+  "version": 1,
+  "id": "asobo-textron-aviation-cessna-152",
+  "name": "Asobo Textron Aviation Cessna 152",
+  "enabled": true,
+  "aircraft": [
+    "Asobo_C152"
+  ],
+  "inheritDefault": true,
+  "lights": {
+    "LowOilPressure": {
+      "expression": "A:GENERAL ENG OIL PRESSURE:1, psi <= 60",
+      "note": "From cockpit.cfg"
+    },
+    "LowVolts": {
+      "expression": "A:ELECTRICAL MAIN BUS VOLTAGE, volts < 25.2",
+      "note": "Typical voltage is 25.3V"
+    }
+  }
+}

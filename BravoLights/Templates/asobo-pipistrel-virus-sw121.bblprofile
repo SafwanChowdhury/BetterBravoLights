@@ -1,0 +1,25 @@
+{
+  "format": "BetterBravoLights.Profile",
+  "version": 1,
+  "id": "asobo-pipistrel-virus-sw121",
+  "name": "Asobo Pipistrel Virus SW121",
+  "enabled": true,
+  "aircraft": [
+    "Asobo_Pipistrel"
+  ],
+  "inheritDefault": true,
+  "lights": {
+    "LowOilPressure": {
+      "expression": "A:GENERAL ENG OIL PRESSURE:1, bar < 2",
+      "note": "Files are encrypted; panel shows \"OIL BAR\" green from 2"
+    },
+    "LowFuelPressure": {
+      "expression": "A:GENERAL ENG FUEL PRESSURE:1, bar < 0.15",
+      "note": "Files are encrypted; panel shows \"FUEL BAR\" green from ~0.15"
+    },
+    "LowVolts": {
+      "expression": "A:ELECTRICAL MAIN BUS VOLTAGE:1, volts < 11.5",
+      "note": "Files are encrypted; basing on other 12V such as E330"
+    }
+  }
+}

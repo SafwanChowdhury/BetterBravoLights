@@ -1,0 +1,21 @@
+{
+  "format": "BetterBravoLights.Profile",
+  "version": 1,
+  "id": "asobo-robin-cap10",
+  "name": "Asobo Robin Cap10",
+  "enabled": true,
+  "aircraft": [
+    "Asobo_Cap10C"
+  ],
+  "inheritDefault": true,
+  "lights": {
+    "LowOilPressure": {
+      "expression": "A:GENERAL ENG OIL PRESSURE:1, psi < 66",
+      "note": "From on-screen panel"
+    },
+    "LowVolts": {
+      "expression": "A:ELECTRICAL MAIN BUS VOLTAGE:1, volts < 11.2",
+      "note": "From on-screen panel"
+    }
+  }
+}

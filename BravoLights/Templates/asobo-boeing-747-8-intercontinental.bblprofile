@@ -1,0 +1,21 @@
+{
+  "format": "BetterBravoLights.Profile",
+  "version": 1,
+  "id": "asobo-boeing-747-8-intercontinental",
+  "name": "Asobo Boeing 747-8 Intercontinental",
+  "enabled": true,
+  "aircraft": [
+    "Asobo_B747_8i"
+  ],
+  "inheritDefault": true,
+  "lights": {
+    "AntiIce": {
+      "expression": "A:STRUCTURAL DEICE SWITCH, bool == 0 AND A:ENG ANTI ICE:1, bool == 0 AND A:ENG ANTI ICE:2, bool == 0 AND A:ENG ANTI ICE:3, bool == 0 AND A:ENG ANTI ICE:4, bool == 0",
+      "note": "Wing, Eng1-4"
+    },
+    "APU": {
+      "expression": "A:APU GENERATOR ACTIVE, bool == 1 OR A:APU GENERATOR ACTIVE:2, bool == 1",
+      "note": "2x APU"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "content": [
+    {
+      "path": "ContentInfo/better-bravo-lights-lvar-module/Thumbnail.jpg",
+      "size": 27899,
+      "date": 132898448102474132
+    },
+    {
+      "path": "modules/WasmModule.wasm",
+      "size": 657606,
+      "date": 132969269911073094
+    }
+  ]
+}

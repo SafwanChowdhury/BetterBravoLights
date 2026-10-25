@@ -1,0 +1,21 @@
+{
+  "format": "BetterBravoLights.Profile",
+  "version": 1,
+  "id": "asobo-jmb-aircraft-vl3",
+  "name": "Asobo JMB Aircraft VL3",
+  "enabled": true,
+  "aircraft": [
+    "Asobo_VL3"
+  ],
+  "inheritDefault": true,
+  "lights": {
+    "LowOilPressure": {
+      "expression": "A:GENERAL ENG OIL PRESSURE:1, psi < 55",
+      "note": "From panel\\panel.xml"
+    },
+    "LowVolts": {
+      "expression": "A:ELECTRICAL MAIN BUS VOLTAGE, volts < 28",
+      "note": "From panel\\panel.xml"
+    }
+  }
+}

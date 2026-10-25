@@ -1,0 +1,25 @@
+{
+  "format": "BetterBravoLights.Profile",
+  "version": 1,
+  "id": "asobo-textron-aviation-cessna-citation-cj4",
+  "name": "Asobo Textron Aviation Cessna Citation CJ4",
+  "enabled": true,
+  "aircraft": [
+    "Asobo_CJ4"
+  ],
+  "inheritDefault": true,
+  "lights": {
+    "LowOilPressure": {
+      "expression": "A:ENG OIL PRESSURE:1, psi < 25 OR A:ENG OIL PRESSURE:2, psi < 25",
+      "note": "From panel\\panel.xml"
+    },
+    "LowFuelPressure": {
+      "expression": "A:GENERAL ENG FUEL PRESSURE:1, psi <= 10 OR A:GENERAL ENG FUEL PRESSURE:2, psi <= 10",
+      "note": "From panel\\panel.xml"
+    },
+    "LowVolts": {
+      "expression": "A:ELECTRICAL MAIN BUS VOLTAGE, volts <= 24.5",
+      "note": "From panel\\panel.xml"
+    }
+  }
+}

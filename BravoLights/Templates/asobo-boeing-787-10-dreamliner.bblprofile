@@ -1,0 +1,21 @@
+{
+  "format": "BetterBravoLights.Profile",
+  "version": 1,
+  "id": "asobo-boeing-787-10-dreamliner",
+  "name": "Asobo Boeing 787-10 Dreamliner",
+  "enabled": true,
+  "aircraft": [
+    "Asobo_B787_10"
+  ],
+  "inheritDefault": true,
+  "lights": {
+    "AntiIce": {
+      "expression": "A:STRUCTURAL DEICE SWITCH, bool == 0 AND A:ENG ANTI ICE:1, bool == 0 AND A:ENG ANTI ICE:2, bool == 0",
+      "note": "Wing, Eng1-2"
+    },
+    "APU": {
+      "expression": "A:APU GENERATOR SWITCH:1, bool == 1 OR A:APU GENERATOR SWITCH:2, bool == 1",
+      "note": "2x APU"
+    }
+  }
+}

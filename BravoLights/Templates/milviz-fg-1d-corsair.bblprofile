@@ -1,0 +1,16 @@
+{
+  "format": "BetterBravoLights.Profile",
+  "version": 1,
+  "id": "milviz-fg-1d-corsair",
+  "name": "Milviz FG-1D Corsair",
+  "enabled": true,
+  "aircraft": [
+    "Milviz_FG1D"
+  ],
+  "inheritDefault": true,
+  "lights": {
+    "LowHydPressure": {
+      "expression": "A:ENG HYDRAULIC PRESSURE:1, psi < 20"
+    }
+  }
+}

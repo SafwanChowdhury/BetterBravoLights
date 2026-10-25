@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using BravoLights.Common;
+using BravoLights.Profiles;
+using BravoLights.Sim;
 using Xunit;
 
 namespace BravoLights.Tests
@@ -19,7 +21,7 @@ namespace BravoLights.Tests
                 "ALT = A:SOME VAR, bool == 1",
             });
 
-            var lightExpressions = LightExpressionConfig.ComputeLightExpressions(config, "General");
+            var lightExpressions = Compute(config, "General");
 
             Assert.Equal("ON", FindLight(lightExpressions, "HDG").Expression.ToString());
             Assert.Equal("OFF", FindLight(lightExpressions, "NAV").Expression.ToString());
@@ -39,7 +41,7 @@ namespace BravoLights.Tests
                 "Invert = HDG, NAV"
             });
 
-            var lightExpressions = LightExpressionConfig.ComputeLightExpressions(config, "General");
+            var lightExpressions = Compute(config, "General");
 
             Assert.Equal("OFF", FindLight(lightExpressions, "HDG").Expression.ToString());
             Assert.Equal("ON", FindLight(lightExpressions, "NAV").Expression.ToString());
@@ -60,7 +62,7 @@ namespace BravoLights.Tests
                 "HDG = A:VARA, number == 2",
             });
 
-            var lightExpressions = LightExpressionConfig.ComputeLightExpressions(config, "General");
+            var lightExpressions = Compute(config, "General");
 
             Assert.Equal("((A:VAR1, number == 1) AND (A:VARA, number == 2))", FindLight(lightExpressions, "HDG").Expression.ToString());
         }
@@ -76,7 +78,7 @@ namespace BravoLights.Tests
                 "HDG = A:VARA, number == 2 OR A:VARB, number == 3",
             });
 
-            var lightExpressions = LightExpressionConfig.ComputeLightExpressions(config, "General");
+            var lightExpressions = Compute(config, "General");
             
             // This test makes sure that multiple parts of the MasterEnable expression and light expression don't combine
             // in incorrect ways.
@@ -100,8 +102,8 @@ namespace BravoLights.Tests
                 "NAV = A:VARC, number == 1"
             });
 
-            var a1LightExpressions = LightExpressionConfig.ComputeLightExpressions(config, "A1");
-            var a2LightExpressions = LightExpressionConfig.ComputeLightExpressions(config, "A2");
+            var a1LightExpressions = Compute(config, "A1");
+            var a2LightExpressions = Compute(config, "A2");
 
             // Inherited MasterEnable and overridden light
             Assert.Equal("((A:VAR1, number == 1) AND (A:VARB, number == 1))", FindLight(a1LightExpressions, "HDG").Expression.ToString());
@@ -126,8 +128,8 @@ namespace BravoLights.Tests
                 "MasterEnable = ON"
             });
 
-            var generalLightExpressions = LightExpressionConfig.ComputeLightExpressions(config, "General");
-            var a1LightExpressions = LightExpressionConfig.ComputeLightExpressions(config, "A1");
+            var generalLightExpressions = Compute(config, "General");
+            var a1LightExpressions = Compute(config, "A1");
 
             Assert.Equal("OFF", FindLight(generalLightExpressions, "HDG").Expression.ToString());
             Assert.Equal("(A:VAR1, number == 1)", FindLight(generalLightExpressions, "NAV").Expression.ToString());
@@ -152,7 +154,7 @@ namespace BravoLights.Tests
                 "Invert = NAV"
             });
 
-            var lightExpressions = LightExpressionConfig.ComputeLightExpressions(config, "AC1");
+            var lightExpressions = Compute(config, "AC1");
 
             Assert.Equal("ON", FindLight(lightExpressions, "HDG").Expression.ToString());
             Assert.Equal("OFF", FindLight(lightExpressions, "NAV").Expression.ToString());
@@ -171,10 +173,34 @@ namespace BravoLights.Tests
                 "Invert = NAV",
             });
 
-            var lightExpressions = LightExpressionConfig.ComputeLightExpressions(config, "AC1");
+            var lightExpressions = Compute(config, "AC1");
 
             // If MasterEnable says that the light should be off, we don't THEN invert it and turn it on.
             Assert.Equal("((A:VAR1, number == 1) AND (NOT (A:VAR2, number == 1)))", FindLight(lightExpressions, "NAV").Expression.ToString());
+        }
+
+        /// <summary>
+        /// Stands in for the old INI-based configuration: the lines are converted into profiles, as an import would.
+        /// </summary>
+        private sealed class FileConfig
+        {
+            private string[] lines = System.Array.Empty<string>();
+
+            public FileConfig(string _)
+            {
+            }
+
+            public void LoadConfig(string[] configLines) => lines = configLines;
+
+            public IList<Profile> Profiles => LegacyIniImporter.Import(lines);
+        }
+
+        private static IEnumerable<LightExpression> Compute(FileConfig config, string aircraft)
+        {
+            var profiles = config.Profiles;
+            var match = ProfileMatcher.Resolve(profiles, new AircraftInfo(aircraft, aircraft, ""));
+            var defaultProfile = profiles.FirstOrDefault(p => p.IsDefault);
+            return LightExpressionConfig.Resolve(match.Profile, defaultProfile).Select(r => r.LightExpression);
         }
 
         private static LightExpression FindLight(IEnumerable<LightExpression> lightExpressions, string lightName)
