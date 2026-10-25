@@ -149,10 +149,29 @@ namespace BravoLights.Connections
             requestQueueTimer = new Timer(_ => DrainRequestQueue(), null, Timeout.Infinite, Timeout.Infinite);
         }
 
+        /// <summary>
+        /// Set once the app is ready for us to connect. Until then, nothing may connect: in particular, subscribing to
+        /// variables while the app is starting up must not open a connection before <see cref="HWnd"/> exists, or
+        /// SimConnect would have nowhere to post its "data waiting" messages and we'd never receive anything.
+        /// </summary>
+        private bool started;
+
+        /// <summary>
+        /// When the current connection was opened, and whether the simulator has answered it yet.
+        /// </summary>
+        private DateTime connectedAt;
+        private bool receivedOpen;
+
+        /// <summary>
+        /// How long we wait for the simulator to answer a new connection before dropping it and trying again.
+        /// </summary>
+        private static readonly TimeSpan ReconnectIfNoAnswerAfter = TimeSpan.FromSeconds(45);
+
         public void Start()
         {
             logger.Debug("Start");
 
+            started = true;
             ConnectNow();
         }
 
@@ -330,8 +349,14 @@ namespace BravoLights.Connections
 
         private void ConnectNow()
         {
-            if (Disabled)
+            if (Disabled || !started)
             {
+                return;
+            }
+
+            if (HWnd == IntPtr.Zero)
+            {
+                logger.Warn("Not connecting to the simulator: there's no window to receive its messages");
                 return;
             }
 
@@ -353,6 +378,9 @@ namespace BravoLights.Connections
             {
                 simconnect = new SimConnect("BravoLights", HWnd, WM_USER_SIMCONNECT, null, 0);
                 logger.Info("SimConnect connected to simulator successfully");
+                connectedAt = DateTime.UtcNow;
+                lastReceivedResponseFromSim = connectedAt;
+                receivedOpen = false;
 
                 simconnect.OnRecvOpen += Simconnect_OnRecvOpen;
                 simconnect.OnRecvSimobjectData += Simconnect_OnRecvSimobjectData;
@@ -402,6 +430,7 @@ namespace BravoLights.Connections
         private void Simconnect_OnRecvOpen(SimConnect sender, SIMCONNECT_RECV_OPEN data)
         {
             lastReceivedResponseFromSim = DateTime.UtcNow;
+            receivedOpen = true;
 
             // Prefer process detection: it's unambiguous. Fall back to the version SimConnect reports.
             string name;
@@ -1044,6 +1073,34 @@ namespace BravoLights.Connections
             SendLVarRequest(message);
         }
 
+        /// <summary>
+        /// Drops the current connection (keeping our subscriptions) and opens a new one, which re-registers everything.
+        /// </summary>
+        private void Reconnect()
+        {
+            lock (this)
+            {
+                var old = simconnect;
+                simconnect = null;
+                hasEverCheckedForLVars = false;
+                lock (requestQueue)
+                {
+                    requestQueue.Clear();
+                }
+
+                try
+                {
+                    old?.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    logger.Debug(ex, "Failed to close the old connection");
+                }
+
+                ConnectNow();
+            }
+        }
+
         private void ExitDetectionTimerElapsed(object sender)
         {
             if (simconnect != null)
@@ -1071,6 +1128,13 @@ namespace BravoLights.Connections
                 if (fsRunning)
                 {
                     logger.Info("Simulator is still running.");
+
+                    // A connection the simulator has never answered is no use to us; drop it and connect again.
+                    if (simconnect != null && !receivedOpen && DateTime.UtcNow - connectedAt > ReconnectIfNoAnswerAfter)
+                    {
+                        logger.Warn("The simulator never answered our connection; reconnecting");
+                        Reconnect();
+                    }
                 }
                 else
                 {

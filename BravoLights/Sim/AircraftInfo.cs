@@ -27,9 +27,10 @@ namespace BravoLights.Sim
             @"SimObjects\\[^\\]+\\(?<path>.+?)\\?$",
             RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-        // ATC strings are often localisation keys, e.g. "TT:ATCCOM.AC_MODEL_B738.0.text" or "TT:ATCCOM.ATC_NAME BOEING.0.text"
+        // ATC strings are often localisation keys, e.g. "TT:ATCCOM.AC_MODEL_B738.0.text" (MSFS 2020) or
+        // "ATCCOM.AC_MODEL B738.0.text" (MSFS 2024, without the TT: prefix)
         private static readonly Regex AtcKeyRegex = new(
-            @"^TT:ATCCOM\.(AC_MODEL|ATC_NAME|ATC_TYPE)[ _]?(?<value>.+?)\.\d+\.text$",
+            @"^(TT:)?ATCCOM\.(AC_MODEL|ATC_NAME|ATC_TYPE)[ _]?(?<value>.+?)\.\d+\.text$",
             RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         public AircraftInfo(string folder, string path, string title, string atcModel = "", string atcType = "")

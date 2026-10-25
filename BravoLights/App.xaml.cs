@@ -151,12 +151,13 @@ namespace BravoLights
                 return;
             }
 
+            // The window that receives SimConnect's messages must exist before anything can connect to the simulator
+            CreateSimConnectMessageWindow();
+
             core = new AppCore(Dispatcher);
             core.Initialize();
             ThemeManager.Apply(core.Settings.Theme);
             core.SimulatorExited += Core_SimulatorExited;
-
-            CreateSimConnectMessageWindow();
 
             shell = new ShellViewModel(core);
             mainWindow = new MainWindow(shell);

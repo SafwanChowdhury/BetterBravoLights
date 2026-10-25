@@ -54,6 +54,9 @@ namespace BravoLights.Tests
         [InlineData("TT:ATCCOM.AC_MODEL_B738.0.text", "B738")]
         [InlineData("TT:ATCCOM.AC_MODEL A320.0.text", "A320")]
         [InlineData("TT:ATCCOM.ATC_NAME BOEING.0.text", "BOEING")]
+        // MSFS 2024 drops the TT: prefix (as reported live for the PMDG 737-800)
+        [InlineData("ATCCOM.AC_MODEL B738.0.text", "B738")]
+        [InlineData("ATCCOM.ATC_NAME BOEING.0.text", "BOEING")]
         [InlineData("B738", "B738")]
         [InlineData("  Boeing ", "Boeing")]
         [InlineData("", "")]
