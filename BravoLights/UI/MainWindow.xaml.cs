@@ -19,7 +19,7 @@ namespace BravoLights.UI
             Height = Math.Max(MinHeight, core.Settings.WindowHeight);
             Topmost = core.Settings.AlwaysOnTop;
 
-            SourceInitialized += (s, e) => WindowHelpers.UseDarkTitleBar(this);
+            SourceInitialized += (s, e) => ThemeManager.StyleTitleBar(this);
         }
 
         public ShellViewModel Shell => (ShellViewModel)DataContext;

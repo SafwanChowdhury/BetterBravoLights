@@ -76,6 +76,16 @@ namespace BravoLights.Profiles
         }
 
         /// <summary>
+        /// Tests whether a pattern matches any of the aircraft's identifiers (folder, path, title, ICAO model, manufacturer).
+        /// </summary>
+        public static bool MatchesAircraft(string pattern, AircraftInfo aircraft)
+        {
+            return aircraft != null && !aircraft.IsEmpty &&
+                (IsMatch(pattern, aircraft.Folder) || IsMatch(pattern, aircraft.Path) || IsMatch(pattern, aircraft.Title) ||
+                 IsMatch(pattern, aircraft.AtcModel) || IsMatch(pattern, aircraft.AtcType));
+        }
+
+        /// <summary>
         /// Computes how specific a match is. Exact (wildcard-free) patterns beat wildcard patterns, and longer
         /// literal text beats shorter, so that e.g. 'PMDG 737-800' beats 'PMDG 737-*' which beats 'PMDG*'.
         /// </summary>
@@ -119,6 +129,14 @@ namespace BravoLights.Profiles
                 else if (IsMatch(candidate, aircraft.Title))
                 {
                     on = "title";
+                }
+                else if (IsMatch(candidate, aircraft.AtcModel))
+                {
+                    on = "ICAO model";
+                }
+                else if (IsMatch(candidate, aircraft.AtcType))
+                {
+                    on = "manufacturer";
                 }
 
                 if (on != null)

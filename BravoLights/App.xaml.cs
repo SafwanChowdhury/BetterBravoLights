@@ -32,6 +32,7 @@ namespace BravoLights
         private Mutex singleInstanceMutex;
         private bool startedBySimulator;
         private bool shownTrayHint;
+        private string renderRoot;
 
         private static bool TryInstallOrUninstall(string cmd)
         {
@@ -93,6 +94,25 @@ namespace BravoLights
                 return;
             }
 
+            // Developer tool: render each page to a PNG, e.g. to check layout changes.
+            // BetterBravoLights.exe /render-pages OutputDirectory
+            // This runs fully isolated so it can't disturb a copy that's in use: a throwaway data folder, no single-instance
+            // lock, no Bravo, no SimConnect and no tray icon.
+            if (e.Args.Length == 2 && e.Args[0] == "/render-pages")
+            {
+                renderRoot = Path.Combine(Path.GetTempPath(), "BetterBravoLights-render-" + Guid.NewGuid().ToString("N"));
+                FlightSimulatorPaths.UnitTestRoot = renderRoot;
+                SimConnectConnection.Disabled = true;
+                core = new AppCore(Dispatcher, useHardware: false);
+                core.Initialize();
+                ThemeManager.Apply(AppTheme.Dark);
+                shell = new ShellViewModel(core);
+                mainWindow = new MainWindow(shell);
+                MainWindow = mainWindow;
+                RenderPagesAsync(e.Args[1]);
+                return;
+            }
+
             if (e.Args.Length == 1)
             {
                 var cmd = e.Args[0];
@@ -133,6 +153,7 @@ namespace BravoLights
 
             core = new AppCore(Dispatcher);
             core.Initialize();
+            ThemeManager.Apply(core.Settings.Theme);
             core.SimulatorExited += Core_SimulatorExited;
 
             CreateSimConnectMessageWindow();
@@ -153,14 +174,6 @@ namespace BravoLights
 
             OfferLegacyImport();
             OfferWasmInstallIfMissing();
-
-            // Developer tool: render each page to a PNG, e.g. to check layout changes.
-            // BetterBravoLights.exe /render-pages OutputDirectory
-            if (e.Args.Length == 2 && e.Args[0] == "/render-pages")
-            {
-                RenderPagesAsync(e.Args[1]);
-                return;
-            }
 
             if (!startedBySimulator && core.Settings.ShowWindowOnManualStart)
             {
@@ -392,40 +405,70 @@ namespace BravoLights
             mainWindow.ShowInTaskbar = false;
             mainWindow.Show();
 
+            // An example aircraft, as MSFS 2024 reports the PMDG 737-800, so pages that show aircraft details have something to show
+            var previewAircraft = new Sim.AircraftInfo("PMDG 737-800", @"PMDG 737-800\presets\pmdg\PMDG 737-BBJ2 BW\config", "737-800 BB2 BW", "B738", "Boeing");
+
             var shots = new (string Name, Action Setup)[]
             {
                 ("Dashboard", () => shell.CurrentPage = Page.Dashboard),
-                ("Profiles", () => shell.CurrentPage = Page.Profiles),
+                ("DashboardAircraft", () => { core.SetPreviewAircraft(previewAircraft); shell.CurrentPage = Page.Dashboard; }),
+                ("Profiles", () => { core.SetPreviewAircraft(Sim.AircraftInfo.None); shell.CurrentPage = Page.Profiles; }),
                 ("ProfileEditor", () => shell.ShowProfile(core.Profiles.FirstOrDefault(p => !p.IsDefault && p.MasterEnable != null)?.Id)),
                 ("Scanner", () => shell.CurrentPage = Page.Scanner),
                 ("ScannerSimVars", () => shell.Scanner.ShowSimVars = true),
                 ("Settings", () => shell.CurrentPage = Page.Settings),
             };
 
-            foreach (var (page, setup) in shots)
+            var originalTheme = core.Settings.Theme;
+            foreach (var theme in new[] { AppTheme.Dark, AppTheme.Light })
             {
-                setup();
-                await System.Threading.Tasks.Task.Delay(1500);
-                mainWindow.UpdateLayout();
-
-                var content = (FrameworkElement)mainWindow.Content;
-                var bitmap = new System.Windows.Media.Imaging.RenderTargetBitmap(
-                    (int)content.ActualWidth, (int)content.ActualHeight, 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
-                var visual = new System.Windows.Media.DrawingVisual();
-                using (var dc = visual.RenderOpen())
+                ThemeManager.Apply(theme);
+                foreach (var (name, setup) in shots)
                 {
-                    dc.DrawRectangle((System.Windows.Media.Brush)FindResource("BgBrush"), null, new Rect(0, 0, content.ActualWidth, content.ActualHeight));
-                    dc.DrawRectangle(new System.Windows.Media.VisualBrush(content), null, new Rect(0, 0, content.ActualWidth, content.ActualHeight));
+                    setup();
+                    await System.Threading.Tasks.Task.Delay(1200);
+                    mainWindow.UpdateLayout();
+                    SaveRender((FrameworkElement)mainWindow.Content, Path.Combine(outputDirectory, $"{name}-{theme}.png"));
                 }
-                bitmap.Render(visual);
 
-                var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
-                encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bitmap));
-                using var stream = File.Create(Path.Combine(outputDirectory, $"{page}.png"));
-                encoder.Save(stream);
+                // The aircraft detector dialog
+                core.SetPreviewAircraft(previewAircraft);
+                var detector = new DetectAircraftWindow(core, new[] { "PMDG 737-800" }, creatingProfile: false)
+                {
+                    WindowStartupLocation = WindowStartupLocation.Manual,
+                    Left = -20000,
+                    Top = -20000,
+                    ShowInTaskbar = false
+                };
+                detector.Show();
+                await System.Threading.Tasks.Task.Delay(1000);
+                detector.UpdateLayout();
+                SaveRender((FrameworkElement)detector.Content, Path.Combine(outputDirectory, $"DetectAircraft-{theme}.png"));
+                detector.Close();
+                core.SetPreviewAircraft(Sim.AircraftInfo.None);
             }
 
+            ThemeManager.Apply(originalTheme);
             ExitApplication();
+        }
+
+        private void SaveRender(FrameworkElement content, string path)
+        {
+            var bitmap = new System.Windows.Media.Imaging.RenderTargetBitmap(
+                (int)content.ActualWidth, (int)content.ActualHeight, 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
+            var visual = new System.Windows.Media.DrawingVisual();
+            using (var dc = visual.RenderOpen())
+            {
+                var bounds = new Rect(0, 0, content.ActualWidth, content.ActualHeight);
+                dc.DrawRectangle((System.Windows.Media.Brush)FindResource("BgBrush"), null, bounds);
+                dc.DrawRectangle(new System.Windows.Media.VisualBrush(content), null, bounds);
+            }
+            bitmap.Render(visual);
+
+            var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
+            encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bitmap));
+            using var stream = File.Create(path);
+            encoder.Save(stream);
         }
 
         private static void ConvertIni(string iniPath, string outputDirectory)
@@ -459,6 +502,16 @@ namespace BravoLights
             notifyIcon?.Dispose();
             messageWindow?.Dispose();
             singleInstanceMutex?.Dispose();
+            if (renderRoot != null)
+            {
+                try
+                {
+                    Directory.Delete(renderRoot, true);
+                }
+                catch
+                {
+                }
+            }
             base.OnExit(e);
         }
     }

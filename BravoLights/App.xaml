@@ -6,7 +6,8 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="UI/Themes/Theme.xaml" />
+                <ResourceDictionary Source="UI/Themes/Dark.xaml" />
+                <ResourceDictionary Source="UI/Themes/Styles.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
             <ui:StatusBrushConverter x:Key="StatusBrush" />

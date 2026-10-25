@@ -72,7 +72,7 @@ namespace BravoLights.UI.ViewModels
 
             NewBlankCommand = new RelayCommand(NewBlank);
             NewFromTemplateCommand = new RelayCommand(NewFromTemplate);
-            NewForAircraftCommand = new RelayCommand(() => CreateProfileForCurrentAircraft(core.Aircraft.DisplayName), () => !core.Aircraft.IsEmpty);
+            NewForAircraftCommand = new RelayCommand(CreateProfileFromSim);
             DuplicateCommand = new RelayCommand(Duplicate, () => Editor != null && !Editor.IsNew);
             DeleteCommand = new RelayCommand(Delete, () => Editor != null && !Editor.IsDefault);
             ImportCommand = new RelayCommand(Import);
@@ -317,6 +317,32 @@ namespace BravoLights.UI.ViewModels
         private void NewBlank()
         {
             OpenNew(new Profile { Name = "New profile" });
+        }
+
+        /// <summary>
+        /// Creates a new profile from what the simulator reports about the loaded aircraft, letting the user choose
+        /// which identifiers (folder, family, variant, title, ICAO model…) the profile should match.
+        /// </summary>
+        public void CreateProfileFromSim()
+        {
+            var window = new DetectAircraftWindow(core, Array.Empty<string>(), creatingProfile: true)
+            {
+                Owner = Application.Current.MainWindow
+            };
+            if (window.ShowDialog() != true)
+            {
+                return;
+            }
+
+            var aircraft = window.Aircraft;
+            var name = aircraft.Folder.Length > 0 ? aircraft.Folder : aircraft.Title;
+            var profile = new Profile { Name = string.IsNullOrWhiteSpace(name) ? "New profile" : name };
+            profile.Aircraft.AddRange(window.SelectedPatterns);
+            if (profile.Aircraft.Count == 0 && AppCore.SuggestedPattern(aircraft) is string suggested)
+            {
+                profile.Aircraft.Add(suggested);
+            }
+            OpenNew(profile);
         }
 
         public void CreateProfileForCurrentAircraft(string name)

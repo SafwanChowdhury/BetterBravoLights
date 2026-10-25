@@ -23,7 +23,17 @@ namespace BravoLights.UI.ViewModels
             Scanner = new ScannerViewModel(core, this);
             Settings = new SettingsViewModel(core);
             CurrentContent = Dashboard;
+
+            ToggleThemeCommand = new RelayCommand(() => Settings.Theme = ThemeManager.IsDark ? AppTheme.Light : AppTheme.Dark);
+            ThemeManager.ThemeChanged += (s, e) => RaisePropertyChanged(nameof(ThemeIcon));
         }
+
+        public System.Windows.Input.ICommand ToggleThemeCommand { get; }
+
+        /// <summary>
+        /// Sun in dark mode (switch to light), moon in light mode (switch to dark).
+        /// </summary>
+        public string ThemeIcon => ThemeManager.IsDark ? "" : "";
 
         public AppCore Core { get; }
         public DashboardViewModel Dashboard { get; }

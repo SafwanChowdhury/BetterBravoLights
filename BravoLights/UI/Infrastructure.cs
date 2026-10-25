@@ -124,7 +124,8 @@ namespace BravoLights.UI
         {
             if (values.Length < 2 || values[0] is not LightColour colour || values[1] is not bool lit || !lit)
             {
-                return Application.Current.FindResource("LightOffBrush");
+                // ConverterParameter=Device: an unlit key on the on-screen Bravo, which is always dark like the hardware
+                return Application.Current.FindResource(parameter as string == "Device" ? "DeviceKeyBrush" : "LightOffBrush");
             }
             return Application.Current.FindResource(colour switch
             {
@@ -167,16 +168,6 @@ namespace BravoLights.UI
             }
             return hasValue ? Visibility.Visible : Visibility.Collapsed;
         }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotSupportedException();
-    }
-
-    public sealed class BoolToBrushConverter : IValueConverter
-    {
-        public Brush TrueBrush { get; set; }
-        public Brush FalseBrush { get; set; }
-
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture) => value is bool b && b ? TrueBrush : FalseBrush;
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotSupportedException();
     }
@@ -237,26 +228,6 @@ namespace BravoLights.UI
 
     public static class WindowHelpers
     {
-        [DllImport("dwmapi.dll")]
-        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
-
-        /// <summary>
-        /// Asks Windows to draw a dark title bar, to match the app's theme.
-        /// </summary>
-        public static void UseDarkTitleBar(Window window)
-        {
-            try
-            {
-                var hwnd = new WindowInteropHelper(window).EnsureHandle();
-                var on = 1;
-                // DWMWA_USE_IMMERSIVE_DARK_MODE is 20 on Windows 10 20H1+ and Windows 11
-                DwmSetWindowAttribute(hwnd, 20, ref on, sizeof(int));
-            }
-            catch
-            {
-                // Not supported on this version of Windows; never mind.
-            }
-        }
 
         public static T FindAncestor<T>(DependencyObject child) where T : DependencyObject
         {

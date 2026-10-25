@@ -10,8 +10,9 @@ namespace BravoLights.Sim
     /// MSFS 2020 reports aircraft as <c>SimObjects\Airplanes\Asobo_C172SP_Classic\aircraft.cfg</c>.
     /// MSFS 2024 reports a preset path such as
     /// <c>SimObjects\Airplanes\FNX_32X\presets\fnx\FNX_320_CFM\config\aircraft.cfg</c>.
-    /// We expose both the top-level folder (<see cref="Folder"/>, e.g. <c>FNX_32X</c>) and the
-    /// full relative path (<see cref="Path"/>), plus the aircraft TITLE, so that profiles can match on whichever is most useful.
+    /// We expose the top-level folder (<see cref="Folder"/>, e.g. <c>FNX_32X</c>), the full relative path
+    /// (<see cref="Path"/>), the aircraft TITLE, and its ATC model/type (e.g. <c>B738</c>, <c>Boeing</c>), so that
+    /// profiles can match on whichever is most useful.
     /// </remarks>
     public sealed class AircraftInfo : IEquatable<AircraftInfo>
     {
@@ -26,11 +27,18 @@ namespace BravoLights.Sim
             @"SimObjects\\[^\\]+\\(?<path>.+?)\\?$",
             RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-        public AircraftInfo(string folder, string path, string title)
+        // ATC strings are often localisation keys, e.g. "TT:ATCCOM.AC_MODEL_B738.0.text" or "TT:ATCCOM.ATC_NAME BOEING.0.text"
+        private static readonly Regex AtcKeyRegex = new(
+            @"^TT:ATCCOM\.(AC_MODEL|ATC_NAME|ATC_TYPE)[ _]?(?<value>.+?)\.\d+\.text$",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        public AircraftInfo(string folder, string path, string title, string atcModel = "", string atcType = "")
         {
             Folder = folder ?? "";
             Path = path ?? "";
             Title = title ?? "";
+            AtcModel = CleanAtcString(atcModel);
+            AtcType = CleanAtcString(atcType);
         }
 
         /// <summary>
@@ -48,6 +56,16 @@ namespace BravoLights.Sim
         /// Gets the TITLE simulation variable for the aircraft (typically the livery/variant title).
         /// </summary>
         public string Title { get; }
+
+        /// <summary>
+        /// Gets the ATC MODEL simulation variable, usually the ICAO type designator, e.g. <c>B738</c> or <c>A320</c>.
+        /// </summary>
+        public string AtcModel { get; }
+
+        /// <summary>
+        /// Gets the ATC TYPE simulation variable, usually the manufacturer, e.g. <c>Boeing</c>.
+        /// </summary>
+        public string AtcType { get; }
 
         public bool IsEmpty => Folder.Length == 0 && Path.Length == 0 && Title.Length == 0;
 
@@ -90,23 +108,44 @@ namespace BravoLights.Sim
             return new AircraftInfo(folder, path, title);
         }
 
-        public AircraftInfo WithTitle(string title)
+        /// <summary>
+        /// Turns an ATC localisation key such as <c>TT:ATCCOM.AC_MODEL_B738.0.text</c> into <c>B738</c>.
+        /// </summary>
+        public static string CleanAtcString(string value)
         {
-            return new AircraftInfo(Folder, Path, title);
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return "";
+            }
+            var trimmed = value.Trim();
+            var match = AtcKeyRegex.Match(trimmed);
+            return match.Success ? match.Groups["value"].Value.Trim() : trimmed;
         }
+
+        /// <summary>
+        /// Returns a copy with the simulation-variable details (title, ATC model, ATC type) replaced. Null keeps the current value.
+        /// </summary>
+        public AircraftInfo WithDetails(string title = null, string atcModel = null, string atcType = null)
+        {
+            return new AircraftInfo(Folder, Path, title ?? Title, atcModel ?? AtcModel, atcType ?? AtcType);
+        }
+
+        public AircraftInfo WithTitle(string title) => WithDetails(title: title);
 
         public bool Equals(AircraftInfo other)
         {
             return other != null &&
                 string.Equals(Folder, other.Folder, StringComparison.OrdinalIgnoreCase) &&
                 string.Equals(Path, other.Path, StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(Title, other.Title, StringComparison.Ordinal);
+                string.Equals(Title, other.Title, StringComparison.Ordinal) &&
+                string.Equals(AtcModel, other.AtcModel, StringComparison.Ordinal) &&
+                string.Equals(AtcType, other.AtcType, StringComparison.Ordinal);
         }
 
         public override bool Equals(object obj) => Equals(obj as AircraftInfo);
 
-        public override int GetHashCode() => HashCode.Combine(Folder.ToUpperInvariant(), Path.ToUpperInvariant(), Title);
+        public override int GetHashCode() => HashCode.Combine(Folder.ToUpperInvariant(), Path.ToUpperInvariant(), Title, AtcModel, AtcType);
 
-        public override string ToString() => $"{Folder} | {Path} | {Title}";
+        public override string ToString() => $"{Folder} | {Path} | {Title} | {AtcModel} | {AtcType}";
     }
 }

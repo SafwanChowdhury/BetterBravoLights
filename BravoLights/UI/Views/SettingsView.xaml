@@ -6,62 +6,112 @@
              xmlns:vm="clr-namespace:BravoLights.UI.ViewModels"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=vm:SettingsViewModel}"
-             d:DesignWidth="980" d:DesignHeight="800">
+             d:DesignWidth="1000" d:DesignHeight="900">
+    <UserControl.Resources>
+        <Style x:Key="SectionCard" TargetType="Border" BasedOn="{StaticResource Card}">
+            <Setter Property="Margin" Value="0,0,0,14" />
+            <Setter Property="Padding" Value="22,20" />
+        </Style>
+        <!-- A row with a description on the left and a control on the right -->
+        <Style x:Key="SettingRow" TargetType="DockPanel">
+            <Setter Property="Margin" Value="0,0,0,16" />
+            <Setter Property="LastChildFill" Value="True" />
+        </Style>
+        <Style x:Key="Dot" TargetType="Ellipse">
+            <Setter Property="Width" Value="7" />
+            <Setter Property="Height" Value="7" />
+            <Setter Property="Margin" Value="0,0,10,0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+    </UserControl.Resources>
+
     <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="28,24,28,28" MaxWidth="980" HorizontalAlignment="Left">
+        <StackPanel Margin="36,30,36,36" MaxWidth="900" HorizontalAlignment="Left">
             <TextBlock Text="Settings" Style="{StaticResource H1}" />
-            <TextBlock Text="Install Better Bravo Lights into your simulators and adjust how it behaves." Style="{StaticResource Dim}" Margin="0,4,0,18" />
+            <TextBlock Text="Appearance, installation and behaviour." Style="{StaticResource Dim}" Margin="0,4,0,24" />
+
+            <!-- Appearance -->
+            <Border Style="{StaticResource SectionCard}">
+                <DockPanel>
+                    <Border DockPanel.Dock="Right" Style="{StaticResource Segment}" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <RadioButton Style="{StaticResource SegmentItem}" GroupName="theme" IsChecked="{Binding ThemeSystem}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE7F4;" Style="{StaticResource Icon}" FontSize="12" Margin="0,0,7,0" />
+                                    <TextBlock Text="System" />
+                                </StackPanel>
+                            </RadioButton>
+                            <RadioButton Style="{StaticResource SegmentItem}" GroupName="theme" IsChecked="{Binding ThemeLight}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE706;" Style="{StaticResource Icon}" FontSize="12" Margin="0,0,7,0" />
+                                    <TextBlock Text="Light" />
+                                </StackPanel>
+                            </RadioButton>
+                            <RadioButton Style="{StaticResource SegmentItem}" GroupName="theme" IsChecked="{Binding ThemeDark}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE708;" Style="{StaticResource Icon}" FontSize="12" Margin="0,0,7,0" />
+                                    <TextBlock Text="Dark" />
+                                </StackPanel>
+                            </RadioButton>
+                        </StackPanel>
+                    </Border>
+                    <StackPanel>
+                        <TextBlock Text="Appearance" Style="{StaticResource H2}" />
+                        <TextBlock Text="System follows your Windows light/dark setting." Style="{StaticResource Faint}" Margin="0,4,0,0" />
+                    </StackPanel>
+                </DockPanel>
+            </Border>
 
             <!-- Simulators -->
-            <Border Style="{StaticResource Card}" Margin="0,0,0,14">
+            <Border Style="{StaticResource SectionCard}">
                 <StackPanel>
-                    <DockPanel Margin="0,0,0,6">
-                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                            <Button Content="Refresh" Command="{Binding RefreshCommand}" Margin="0,0,8,0" />
+                    <DockPanel Margin="0,0,0,4">
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top">
+                            <Button Style="{StaticResource IconButton}" Content="&#xE72C;" Command="{Binding RefreshCommand}" ToolTip="Refresh" Margin="0,0,6,0" />
                             <Button Content="Install into all" Style="{StaticResource PrimaryButton}" Command="{Binding InstallAllCommand}" />
                         </StackPanel>
                         <TextBlock Text="Simulators" Style="{StaticResource H2}" VerticalAlignment="Center" />
                     </DockPanel>
-                    <TextBlock Style="{StaticResource Dim}" Margin="0,0,0,12"
-                               Text="Installing adds Better Bravo Lights to the simulator's exe.xml so it starts automatically, and copies the WASM module (needed to read L: variables) into the Community folder. MSFS 2020 and MSFS 2024 are installed separately." />
+                    <TextBlock Style="{StaticResource Dim}" Margin="0,0,0,16"
+                               Text="Installing makes Better Bravo Lights start with the simulator (via exe.xml) and adds the WASM module it needs to read L: variables. MSFS 2020 and 2024 are set up separately." />
 
-                    <TextBlock Text="No installation of MSFS 2020 or MSFS 2024 was found for this Windows user." Foreground="{StaticResource WarningBrush}"
+                    <TextBlock Text="No installation of MSFS 2020 or MSFS 2024 was found for this Windows user." Foreground="{DynamicResource WarningBrush}"
                                Visibility="{Binding NoSimsFound, Converter={StaticResource BoolToVis}}" />
 
                     <ItemsControl ItemsSource="{Binding Sims}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Background="{StaticResource Surface2Brush}" CornerRadius="8" Padding="14,12" Margin="0,0,0,10">
+                                <Border Background="{DynamicResource Surface2Brush}" CornerRadius="10" Padding="16,14" Margin="0,0,0,10">
                                     <StackPanel>
                                         <DockPanel>
                                             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top">
-                                                <Button Style="{StaticResource SmallButton}" Content="Install / repair" Command="{Binding InstallCommand}" Margin="0,0,6,0" />
-                                                <Button Style="{StaticResource SmallButton}" Content="Update WASM only" Command="{Binding InstallWasmCommand}" Margin="0,0,6,0" />
-                                                <Button Style="{StaticResource SmallButton}" Content="Uninstall" Command="{Binding UninstallCommand}" Foreground="{StaticResource DangerBrush}" />
+                                                <Button Style="{StaticResource SmallButton}" Background="{DynamicResource SurfaceBrush}" Content="Install / repair" Command="{Binding InstallCommand}" Margin="0,0,6,0" />
+                                                <Button Style="{StaticResource GhostButton}" Content="Update WASM" Command="{Binding InstallWasmCommand}" FontSize="12" Margin="0,0,2,0" />
+                                                <Button Style="{StaticResource DangerTextButton}" Content="Uninstall" Command="{Binding UninstallCommand}" FontSize="12" />
                                             </StackPanel>
                                             <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold" />
-                                                <Border Style="{StaticResource Badge}" Background="{StaticResource SuccessSoftBrush}" Margin="10,0,0,0"
+                                                <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                                <Border Style="{StaticResource Badge}" Background="{DynamicResource SuccessSoftBrush}" Margin="10,0,0,0"
                                                         Visibility="{Binding IsFullyInstalled, Converter={StaticResource BoolToVis}}">
-                                                    <TextBlock Text="INSTALLED" FontSize="9.5" FontWeight="Bold" Foreground="{StaticResource SuccessBrush}" />
+                                                    <TextBlock Text="Installed" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource SuccessBrush}" />
                                                 </Border>
                                             </StackPanel>
                                         </DockPanel>
 
-                                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                                            <Ellipse Width="8" Height="8" Margin="0,0,8,0" Fill="{Binding AutoStartLevel, Converter={StaticResource StatusBrush}}" />
-                                            <TextBlock Text="{Binding AutoStartText}" TextWrapping="Wrap" />
+                                        <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                                            <Ellipse Style="{StaticResource Dot}" Fill="{Binding AutoStartLevel, Converter={StaticResource StatusBrush}}" />
+                                            <TextBlock Text="{Binding AutoStartText}" TextWrapping="Wrap" FontSize="12.5" />
                                         </StackPanel>
-                                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                                            <Ellipse Width="8" Height="8" Margin="0,0,8,0" Fill="{Binding WasmLevel, Converter={StaticResource StatusBrush}}" />
-                                            <TextBlock Text="{Binding WasmText}" TextWrapping="Wrap" />
+                                        <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                                            <Ellipse Style="{StaticResource Dot}" Fill="{Binding WasmLevel, Converter={StaticResource StatusBrush}}" />
+                                            <TextBlock Text="{Binding WasmText}" TextWrapping="Wrap" FontSize="12.5" />
                                         </StackPanel>
-                                        <TextBlock Text="{Binding Problem}" Foreground="{StaticResource DangerBrush}" TextWrapping="Wrap" Margin="0,6,0,0"
+                                        <TextBlock Text="{Binding Problem}" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" Margin="0,8,0,0" FontSize="12.5"
                                                    Visibility="{Binding Problem, Converter={StaticResource NullToVis}}" />
-                                        <TextBlock Text="{Binding SharedNote}" Foreground="{StaticResource WarningBrush}" TextWrapping="Wrap" Margin="0,6,0,0"
+                                        <TextBlock Text="{Binding SharedNote}" Foreground="{DynamicResource WarningBrush}" TextWrapping="Wrap" Margin="0,8,0,0" FontSize="12.5"
                                                    Visibility="{Binding SharedNote, Converter={StaticResource NullToVis}}" />
 
-                                        <Grid Margin="0,10,0,0">
+                                        <Grid Margin="0,12,0,0">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto" />
                                                 <ColumnDefinition Width="*" />
@@ -71,14 +121,14 @@
                                                 <RowDefinition />
                                                 <RowDefinition />
                                             </Grid.RowDefinitions>
-                                            <TextBlock Text="Settings folder" Foreground="{StaticResource TextDimBrush}" Margin="0,0,12,4" FontSize="12" />
+                                            <TextBlock Text="Settings folder" Style="{StaticResource Faint}" Margin="0,0,14,2" VerticalAlignment="Center" />
                                             <TextBlock Grid.Column="1" Text="{Binding ConfigFolder}" FontFamily="{StaticResource MonoFont}" FontSize="11.5" TextTrimming="CharacterEllipsis"
-                                                       ToolTip="{Binding ConfigFolder}" VerticalAlignment="Center" />
-                                            <Button Grid.Column="2" Style="{StaticResource GhostButton}" Content="Open" Command="{Binding OpenConfigCommand}" FontSize="12" />
-                                            <TextBlock Grid.Row="1" Text="Community folder" Foreground="{StaticResource TextDimBrush}" Margin="0,0,12,0" FontSize="12" />
+                                                       Foreground="{DynamicResource TextDimBrush}" ToolTip="{Binding ConfigFolder}" VerticalAlignment="Center" />
+                                            <Button Grid.Column="2" Style="{StaticResource IconButton}" Content="&#xE8DA;" FontSize="12" Command="{Binding OpenConfigCommand}" ToolTip="Open folder" />
+                                            <TextBlock Grid.Row="1" Text="Community folder" Style="{StaticResource Faint}" Margin="0,0,14,0" VerticalAlignment="Center" />
                                             <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding CommunityPath}" FontFamily="{StaticResource MonoFont}" FontSize="11.5"
-                                                       TextTrimming="CharacterEllipsis" ToolTip="{Binding CommunityPath}" VerticalAlignment="Center" />
-                                            <Button Grid.Row="1" Grid.Column="2" Style="{StaticResource GhostButton}" Content="Open" Command="{Binding OpenCommunityCommand}" FontSize="12" />
+                                                       Foreground="{DynamicResource TextDimBrush}" TextTrimming="CharacterEllipsis" ToolTip="{Binding CommunityPath}" VerticalAlignment="Center" />
+                                            <Button Grid.Row="1" Grid.Column="2" Style="{StaticResource IconButton}" Content="&#xE8DA;" FontSize="12" Command="{Binding OpenCommunityCommand}" ToolTip="Open folder" />
                                         </Grid>
                                     </StackPanel>
                                 </Border>
@@ -89,21 +139,44 @@
             </Border>
 
             <!-- Behaviour -->
-            <Border Style="{StaticResource Card}" Margin="0,0,0,14">
+            <Border Style="{StaticResource SectionCard}">
                 <StackPanel>
-                    <TextBlock Text="Behaviour" Style="{StaticResource H2}" Margin="0,0,0,12" />
-                    <CheckBox Content="Exit when the simulator exits" IsChecked="{Binding ExitWithSimulator}" Margin="0,0,0,10" />
-                    <CheckBox Content="Open this window when Better Bravo Lights is started manually" IsChecked="{Binding ShowWindowOnManualStart}" Margin="0,0,0,10" />
-                    <CheckBox Content="Keep this window on top of other windows" IsChecked="{Binding AlwaysOnTop}" Margin="0,0,0,10" />
-                    <CheckBox Content="Check for new versions" IsChecked="{Binding CheckForUpdates}" />
-                    <TextBlock Style="{StaticResource Dim}" Margin="0,10,0,0" Text="When the simulator starts Better Bravo Lights it runs quietly in the notification area; double-click its icon to open this window." />
+                    <TextBlock Text="Behaviour" Style="{StaticResource H2}" Margin="0,0,0,18" />
+                    <DockPanel Style="{StaticResource SettingRow}">
+                        <CheckBox DockPanel.Dock="Right" IsChecked="{Binding ExitWithSimulator}" VerticalAlignment="Center" />
+                        <StackPanel>
+                            <TextBlock Text="Exit with the simulator" />
+                            <TextBlock Text="Close Better Bravo Lights when MSFS closes." Style="{StaticResource Faint}" />
+                        </StackPanel>
+                    </DockPanel>
+                    <DockPanel Style="{StaticResource SettingRow}">
+                        <CheckBox DockPanel.Dock="Right" IsChecked="{Binding ShowWindowOnManualStart}" VerticalAlignment="Center" />
+                        <StackPanel>
+                            <TextBlock Text="Open this window on manual start" />
+                            <TextBlock Text="When started by the simulator it always runs quietly in the notification area." Style="{StaticResource Faint}" />
+                        </StackPanel>
+                    </DockPanel>
+                    <DockPanel Style="{StaticResource SettingRow}">
+                        <CheckBox DockPanel.Dock="Right" IsChecked="{Binding AlwaysOnTop}" VerticalAlignment="Center" />
+                        <StackPanel>
+                            <TextBlock Text="Keep on top" />
+                            <TextBlock Text="Keep this window above other windows, e.g. over the simulator." Style="{StaticResource Faint}" />
+                        </StackPanel>
+                    </DockPanel>
+                    <DockPanel Style="{StaticResource SettingRow}" Margin="0">
+                        <CheckBox DockPanel.Dock="Right" IsChecked="{Binding CheckForUpdates}" VerticalAlignment="Center" />
+                        <StackPanel>
+                            <TextBlock Text="Check for updates" />
+                            <TextBlock Text="Look for new releases on GitHub at startup." Style="{StaticResource Faint}" />
+                        </StackPanel>
+                    </DockPanel>
                 </StackPanel>
             </Border>
 
             <!-- Profiles & data -->
-            <Border Style="{StaticResource Card}" Margin="0,0,0,14">
+            <Border Style="{StaticResource SectionCard}">
                 <StackPanel>
-                    <TextBlock Text="Profiles and data" Style="{StaticResource H2}" Margin="0,0,0,12" />
+                    <TextBlock Text="Profiles and data" Style="{StaticResource H2}" Margin="0,0,0,14" />
                     <Grid Margin="0,0,0,12">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
@@ -114,34 +187,37 @@
                             <RowDefinition />
                             <RowDefinition />
                         </Grid.RowDefinitions>
-                        <TextBlock Text="Profiles folder" Foreground="{StaticResource TextDimBrush}" Margin="0,0,12,6" VerticalAlignment="Center" />
-                        <TextBlock Grid.Column="1" Text="{Binding ProfilesFolder}" FontFamily="{StaticResource MonoFont}" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                        <Button Grid.Column="2" Style="{StaticResource SmallButton}" Content="Open" Command="{Binding OpenProfilesFolderCommand}" Margin="8,0,0,6" />
-                        <TextBlock Grid.Row="1" Text="Program and logs" Foreground="{StaticResource TextDimBrush}" Margin="0,0,12,0" VerticalAlignment="Center" />
-                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding ProgramFolder}" FontFamily="{StaticResource MonoFont}" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                        <Button Grid.Row="1" Grid.Column="2" Style="{StaticResource SmallButton}" Content="Open" Command="{Binding OpenLogsFolderCommand}" Margin="8,0,0,0" />
+                        <TextBlock Text="Profiles" Style="{StaticResource Faint}" Margin="0,0,14,4" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1" Text="{Binding ProfilesFolder}" FontFamily="{StaticResource MonoFont}" FontSize="12" Foreground="{DynamicResource TextDimBrush}"
+                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        <Button Grid.Column="2" Style="{StaticResource IconButton}" Content="&#xE8DA;" FontSize="12" Command="{Binding OpenProfilesFolderCommand}" ToolTip="Open folder" />
+                        <TextBlock Grid.Row="1" Text="Program and logs" Style="{StaticResource Faint}" Margin="0,0,14,0" VerticalAlignment="Center" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding ProgramFolder}" FontFamily="{StaticResource MonoFont}" FontSize="12" Foreground="{DynamicResource TextDimBrush}"
+                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        <Button Grid.Row="1" Grid.Column="2" Style="{StaticResource IconButton}" Content="&#xE8DA;" FontSize="12" Command="{Binding OpenLogsFolderCommand}" ToolTip="Open folder" />
                     </Grid>
-                    <TextBlock Style="{StaticResource Dim}" Margin="0,0,0,10"
-                               Text="Each profile is a separate .bblprofile file. You can share them, back them up, or edit them by hand; changes are picked up automatically." />
+                    <TextBlock Style="{StaticResource Faint}" Margin="0,0,0,14"
+                               Text="Each profile is its own .bblprofile file. Share them, back them up or edit them by hand; changes are picked up automatically." />
                     <WrapPanel>
                         <Button Content="Import old Config.ini…" Command="{Binding ImportLegacyCommand}" Margin="0,0,8,0"
                                 ToolTip="Convert the [Aircraft.xxx] sections of an old Better Bravo Lights configuration into profiles" />
-                        <Button Content="Restore built-in profiles" Command="{Binding RestoreTemplatesCommand}"
+                        <Button Content="Restore built-in profiles" Style="{StaticResource GhostButton}" Command="{Binding RestoreTemplatesCommand}"
                                 ToolTip="Add back any built-in aircraft profiles you've deleted" />
                     </WrapPanel>
                 </StackPanel>
             </Border>
 
             <!-- About -->
-            <Border Style="{StaticResource Card}">
-                <StackPanel>
-                    <TextBlock Text="About" Style="{StaticResource H2}" Margin="0,0,0,8" />
-                    <TextBlock Text="{Binding Version}" />
-                    <TextBlock Text="{Binding UpdateText}" Foreground="{StaticResource AccentBrush}" Margin="0,4,0,0" Visibility="{Binding UpdateText, Converter={StaticResource NullToVis}}" />
-                    <TextBlock Style="{StaticResource Dim}" Margin="0,6,0,10"
-                               Text="Originally by Royston Shufflebotham. Supports Microsoft Flight Simulator 2020 and 2024 with the Honeycomb Bravo Throttle Quadrant." />
-                    <Button HorizontalAlignment="Left" Content="Documentation" Command="{Binding OpenWebsiteCommand}" />
-                </StackPanel>
+            <Border Style="{StaticResource SectionCard}">
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Content="Documentation" Style="{StaticResource GhostButton}" Command="{Binding OpenWebsiteCommand}" VerticalAlignment="Center" />
+                    <StackPanel>
+                        <TextBlock Text="{Binding Version}" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding UpdateText}" Foreground="{DynamicResource AccentTextBrush}" Margin="0,4,0,0" Visibility="{Binding UpdateText, Converter={StaticResource NullToVis}}" />
+                        <TextBlock Style="{StaticResource Faint}" Margin="0,4,0,0"
+                                   Text="Originally by Royston Shufflebotham. For MSFS 2020 and 2024 with the Honeycomb Bravo Throttle Quadrant." />
+                    </StackPanel>
+                </DockPanel>
             </Border>
         </StackPanel>
     </ScrollViewer>

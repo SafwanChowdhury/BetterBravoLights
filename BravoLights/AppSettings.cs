@@ -50,6 +50,12 @@ namespace BravoLights
         /// </summary>
         public bool LegacyConfigImportOffered { get; set; }
 
+        /// <summary>
+        /// Light, dark, or follow the Windows setting.
+        /// </summary>
+        [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))]
+        public UI.AppTheme Theme { get; set; } = UI.AppTheme.System;
+
         public double WindowWidth { get; set; } = 1240;
         public double WindowHeight { get; set; } = 840;
 

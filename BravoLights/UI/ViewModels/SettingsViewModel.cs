@@ -211,6 +211,25 @@ namespace BravoLights.UI.ViewModels
             set { core.Settings.CheckForUpdates = value; core.Settings.Save(); Notify(); }
         }
 
+        public AppTheme Theme
+        {
+            get => core.Settings.Theme;
+            set
+            {
+                core.Settings.Theme = value;
+                core.Settings.Save();
+                ThemeManager.Apply(value);
+                Notify(nameof(ThemeSystem));
+                Notify(nameof(ThemeLight));
+                Notify(nameof(ThemeDark));
+            }
+        }
+
+        // Two-way bindable flags for the theme segmented control
+        public bool ThemeSystem { get => Theme == AppTheme.System; set { if (value) Theme = AppTheme.System; } }
+        public bool ThemeLight { get => Theme == AppTheme.Light; set { if (value) Theme = AppTheme.Light; } }
+        public bool ThemeDark { get => Theme == AppTheme.Dark; set { if (value) Theme = AppTheme.Dark; } }
+
         private void Notify([System.Runtime.CompilerServices.CallerMemberName] string name = null)
         {
             base.RaisePropertyChanged(name);

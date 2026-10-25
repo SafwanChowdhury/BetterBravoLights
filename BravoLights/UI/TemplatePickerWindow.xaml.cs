@@ -34,7 +34,7 @@ namespace BravoLights.UI
         public TemplatePickerWindow(AppCore core)
         {
             InitializeComponent();
-            SourceInitialized += (s, e) => WindowHelpers.UseDarkTitleBar(this);
+            SourceInitialized += (s, e) => ThemeManager.StyleTitleBar(this);
 
             var library = core.Store.Profiles;
             items = core.Templates.Templates.Select(t => new TemplateItem
