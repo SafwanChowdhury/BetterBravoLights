@@ -16,7 +16,8 @@ namespace BravoLights.Tests
 
             public ImportedConfig(string file)
             {
-                profiles = LegacyIniImporter.Import(file.Split('\r', '\n'));
+                // Treat a Windows line ending as one line break, as File.ReadAllLines does for real files
+                profiles = LegacyIniImporter.Import(file.Replace("\r\n", "\n").Split('\n'));
             }
 
             /// <summary>
