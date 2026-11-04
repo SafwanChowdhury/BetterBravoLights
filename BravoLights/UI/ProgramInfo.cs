@@ -9,6 +9,11 @@ namespace BravoLights.UI
 {
     public class ProgramInfo
     {
+        /// <summary>
+        /// The GitHub repository whose releases are checked for new versions.
+        /// </summary>
+        private const string GitHubRepository = "SafwanChowdhury/BetterBravoLights";
+
         public static string ProductNameAndVersion
         {
             get
@@ -29,10 +34,10 @@ namespace BravoLights.UI
         {
             var client = new HttpClient();
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github.v3+json"));
-            client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("RoystonS-BetterBravoLights", VersionString));
+            client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("BetterBravoLights", VersionString));
 
             // We're not going to bother paging so we'll assume that the latest version is somewhere in the first page.
-            var response = await client.GetStringAsync("https://api.github.com/repos/RoystonS/BetterBravoLights/releases");
+            var response = await client.GetStringAsync($"https://api.github.com/repos/{GitHubRepository}/releases");
             return ExtractLatestVersionFromGitHubReleasesJson(response);
         }
 
@@ -79,11 +84,21 @@ namespace BravoLights.UI
             try
             {
                 var latestVersion = await GetLatestVersionStringAsync();
-                return latestVersion != VersionString;
+                return IsNewerVersion(latestVersion, VersionString);
             } catch
             {
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Tests whether a released version is newer than the running one. An older release is never offered as an update.
+        /// </summary>
+        internal static bool IsNewerVersion(string latest, string current)
+        {
+            return Version.TryParse(latest, out var latestVersion) &&
+                Version.TryParse(current, out var currentVersion) &&
+                latestVersion.CompareTo(currentVersion) > 0;
         }
     }
 }

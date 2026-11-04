@@ -152,7 +152,7 @@ namespace BravoLights.UI.ViewModels
             }
             if (await ProgramInfo.IsNewVersionAvailableAsync())
             {
-                UpdateText = $"Version {await ProgramInfo.GetLatestVersionStringAsync()} is available upstream.";
+                UpdateText = $"Version {await ProgramInfo.GetLatestVersionStringAsync()} is available.";
             }
         }
 
